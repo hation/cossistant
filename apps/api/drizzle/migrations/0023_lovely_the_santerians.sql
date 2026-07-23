@@ -1,0 +1,1 @@
+ALTER TABLE "website" ADD COLUMN "default_participant_ids" jsonb DEFAULT '[]'::jsonb;

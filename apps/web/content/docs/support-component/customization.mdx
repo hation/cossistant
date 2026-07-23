@@ -1,0 +1,207 @@
+---
+title: Change One Thing
+description: Keep the default widget and swap one small piece at a time.
+search:
+  kind: guide
+  tags:
+    - styling
+    - tailwind
+    - classNames
+    - theme
+    - slots
+  aliases:
+    - classNames.trigger
+    - classNames.content
+    - slotProps
+    - Support.Root
+---
+
+`Support` is built for small edits. Start with styling, then swap one component, and keep the rest of the widget working as-is.
+
+## Use this when
+
+- you want the widget live fast
+- you need the bubble or first screen to feel more like your product
+- you want safe overrides without rebuilding the router or conversation UI
+
+## Smallest working change
+
+```tsx
+import { Support } from "@cossistant/react";
+
+<Support
+  classNames={{
+    trigger: "bg-black text-white",
+    content: "border-neutral-200 shadow-2xl",
+  }}
+  slotProps={{
+    content: {
+      className: "border border-neutral-200 shadow-2xl",
+    },
+  }}
+/>;
+```
+
+Use `classNames` for the built-in trigger and content. Use `slotProps` when you want to pass extra presentational props to built-in parts.
+
+The default widget also exposes stable styling hooks:
+
+- `data-slot`
+- `data-state`
+- `data-page`
+
+```css
+[data-slot="trigger"][data-state="open"] {
+  transform: scale(1.02);
+}
+
+[data-slot="content"] {
+  backdrop-filter: blur(12px);
+}
+```
+
+## Bubble example 1
+
+Use `slots.trigger` when the launcher is the only thing that should change.
+
+```tsx
+import { Support, type SupportTriggerSlotProps } from "@cossistant/react";
+import * as React from "react";
+
+function mergeClassNames(...classes: Array<string | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+const ClassicBubble = React.forwardRef<HTMLButtonElement, SupportTriggerSlotProps>(
+  function ClassicBubbleTrigger(
+    { className, isOpen, isTyping: _isTyping, toggle, unreadCount, ...props },
+    ref
+  ) {
+    return (
+      <button
+        {...props}
+        className={mergeClassNames(
+          "relative flex size-14 items-center justify-center border border-black bg-black font-medium text-white text-sm shadow-xl transition-transform hover:scale-[1.02]",
+          className
+        )}
+        onClick={toggle}
+        ref={ref}
+        type="button"
+      >
+        {isOpen ? "Close" : "Chat"}
+        {unreadCount > 0 ? (
+          <span className="-right-1 -top-1 absolute flex size-5 items-center justify-center border border-white bg-orange-500 text-[11px]">
+            {unreadCount}
+          </span>
+        ) : null}
+      </button>
+    );
+  }
+);
+
+<Support slots={{ trigger: ClassicBubble }} />;
+```
+
+<ComponentPreview name="support-classic-bubble" />
+
+## Bubble example 2
+
+The same slot can feel more like an in-product button instead of a floating chat bubble.
+
+```tsx
+import { Support, type SupportTriggerSlotProps } from "@cossistant/react";
+import * as React from "react";
+
+function mergeClassNames(...classes: Array<string | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+const PillBubble = React.forwardRef<HTMLButtonElement, SupportTriggerSlotProps>(
+  function PillBubble(
+    {
+      className,
+      isOpen: _isOpen,
+      isTyping,
+      unreadCount: _unreadCount,
+      toggle,
+      ...props
+    },
+    ref
+  ) {
+    return (
+      <button
+        {...props}
+        className={mergeClassNames(
+          "flex h-12 items-center gap-2 border border-black bg-white px-4 font-medium text-black text-sm shadow-xl transition-transform hover:scale-[1.01]",
+          className
+        )}
+        onClick={toggle}
+        ref={ref}
+        type="button"
+      >
+        <span className="size-2 bg-orange-500" />
+        <span>{isTyping ? "Support is typing..." : "Open support"}</span>
+      </button>
+    );
+  }
+);
+
+<Support slots={{ trigger: PillBubble }} />;
+```
+
+<ComponentPreview name="support-pill-bubble" />
+
+## Replace the first screen
+
+Keep the default conversation flow and change only the home page.
+
+```tsx
+import { Support, type SupportHomePageSlotProps } from "@cossistant/react";
+
+function CustomHomePage({
+  className,
+  openConversationHistory,
+  quickOptions,
+  startConversation,
+  website,
+}: SupportHomePageSlotProps) {
+  return (
+    <div className={className}>
+      <h2>{website?.name}</h2>
+      <p>Rewrite the first screen while keeping the default conversation flow.</p>
+
+      {quickOptions.map((option) => (
+        <button key={option} onClick={() => startConversation(option)} type="button">
+          {option}
+        </button>
+      ))}
+
+      <button onClick={openConversationHistory} type="button">
+        View past conversations
+      </button>
+    </div>
+  );
+}
+
+<Support
+  slotProps={{
+    content: {
+      className: "border shadow-2xl",
+    },
+  }}
+  slots={{ homePage: CustomHomePage }}
+/>;
+```
+
+<ComponentPreview name="support-custom-home" />
+
+## When to stop here
+
+- your widget is in production
+- branding changes fit inside `classNames`, `slotProps`, or one slot override
+- you still want the default router, conversation page, and composer
+
+## Next step
+
+- [Match Your Brand](/docs/support-component/theme) for colors, radius, and dark mode
+- [Pages & Layouts](/docs/support-component/routing) when you need custom pages or an inline embed

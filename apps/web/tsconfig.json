@@ -1,0 +1,33 @@
+{
+  "extends": "@cossistant/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/docs/*": ["./src/app/(docs)/*"],
+      "@/docs-source/*": ["./.source/*"],
+      "fumadocs-mdx:collections/*": ["./.source/*"],
+      "@api/*": ["../api/src/*"],
+      "@cossistant/react/*": ["../../packages/react/src/*"],
+      "@cossistant/react": ["../../packages/react/src"],
+      "@cossistant/next/*": ["../../packages/next/src/*"],
+      "@cossistant/next": ["../../packages/next/src"]
+    },
+    "skipLibCheck": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "../api/src/lib/loops.ts",
+    "next.config.mjs"
+  ],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,145 @@
+---
+title: Conversations
+description: Real-time chat threads between visitors and your support team.
+---
+
+## What are Conversations?
+
+**Conversations** are threaded chat sessions between [visitors](/docs/concepts) (or [contacts](/docs/concepts/contacts)) and your support team. Each conversation has a timeline of [items](/docs/concepts/timeline-items) such as messages, events, identification records, and tool activity.
+
+## Key Properties
+
+Every conversation includes:
+
+- **status**: `open`, `resolved`, or `spam`
+- **priority**: `low`, `normal`, `high`, or `urgent`
+- **participants**: Support agents (human or AI) involved
+- **tags**: Labels for categorization (billing, technical, onboarding, etc.)
+- **timeline**: Ordered list of [timeline items](/docs/concepts/timeline-items)
+- **lastTimelineItem**: Most recent activity for sorting/preview
+
+## Conversation Lifecycle
+
+### Creation
+
+Conversations are created when:
+
+- A visitor sends their first message through the support widget
+- A support agent initiates a conversation from the dashboard
+- Your backend creates one via the API
+
+### Status Flow
+
+```
+open → resolved
+  │       ↑
+  │       │
+  └→ spam └─ reopened
+```
+
+- **open**: Active conversation requiring attention
+- **resolved**: Conversation marked as complete (can be reopened)
+- **spam**: Conversation classified as unwanted or abusive traffic
+
+### Priority Levels
+
+Conversations can be prioritized:
+
+- **low**: General questions, non-urgent feedback
+- **normal**: Standard support requests (default)
+- **high**: Important issues affecting user experience
+- **urgent**: Critical problems requiring immediate attention
+
+Support agents can adjust priority based on conversation context.
+
+## Real-time Updates
+
+Conversations support **real-time synchronization** via WebSocket:
+
+- New messages appear instantly
+- Typing indicators show when agents are composing
+- Seen receipts track when messages are read
+- Status changes broadcast immediately
+
+The Cossistant SDK handles all WebSocket management automatically—no configuration needed.
+
+## Conversation Timeline
+
+Each conversation has a timeline of [items](/docs/concepts/timeline-items):
+
+- **Messages**: Text and files from visitors or agents
+- **Events**: System activities (assigned, resolved, participant joined)
+- **Identification records**: Visitor/contact identification activity
+- **Tool items**: AI and tool execution records written into the timeline
+
+The timeline provides a complete audit trail of the conversation.
+
+### Example Timeline
+
+```
+1. [MESSAGE] Visitor: "How do I reset my password?"
+2. [EVENT] Agent Sarah joined the conversation
+3. [MESSAGE] Sarah: "I can help! Click your profile..."
+4. [EVENT] Conversation marked as resolved
+5. [MESSAGE] Visitor: "Thanks, that worked!"
+6. [EVENT] Conversation reopened
+```
+
+## Multi-Agent Support
+
+Conversations can involve multiple participants:
+
+- **Human agents**: Support team members
+- **AI agents**: Automated assistants
+- **Mixed mode**: AI handles initial triage, escalates to humans
+
+Agents can:
+
+- Join and leave conversations
+- See full conversation history
+- Add internal notes (private [timeline items](/docs/concepts/timeline-items))
+
+## Tags and Organization
+
+Tag conversations for filtering and reporting:
+
+```typescript
+tags: ["billing", "urgent", "enterprise-customer"];
+```
+
+Tags help:
+
+- Route conversations to specialized teams
+- Generate reports and analytics
+- Filter dashboard views
+- Track common issue types
+
+## Seen Tracking
+
+Cossistant tracks when participants last viewed a conversation:
+
+- **Visitors**: Automatic seen updates when widget is open
+- **Agents**: Tracked in dashboard
+- **Unread count**: Calculated per participant
+
+This powers unread badges in the support widget and dashboard.
+
+## Cross-Device Continuity
+
+For identified [contacts](/docs/concepts/contacts), conversations sync across devices and storage resets:
+
+- Start conversation on desktop
+- Continue on mobile
+- Reinstall the app or clear browser storage
+- Log in again and identify with the same `externalId` or email
+- Same history, same context
+
+Internally, old conversations keep the original visitor ID that created them. After identification, any current visitor linked to the same contact can still list, read, and continue those conversations through the shared contact.
+
+Anonymous [visitors](/docs/concepts) have device-specific conversations. Until a visitor is identified, Cossistant scopes their history to the visitor ID stored on that device/browser.
+
+## Learn More
+
+- **[Timeline Items](/docs/concepts/timeline-items)**: Building blocks of conversations
+- **[Visitors](/docs/concepts)**: Anonymous users who start conversations
+- **[Contacts](/docs/concepts/contacts)**: Identified users with cross-device history

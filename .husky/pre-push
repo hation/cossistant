@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+# Skip in CI environments (GitHub Actions, etc.)
+[ -n "$CI" ] && exit 0
+
+bun run docs:links

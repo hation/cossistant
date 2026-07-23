@@ -1,0 +1,5 @@
+# deps
+node_modules/
+server
+.devtools
+debug/system-prompts/

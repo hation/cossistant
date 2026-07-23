@@ -1,0 +1,394 @@
+import type { ImageProps } from "fumadocs-core/framework";
+// TODO: Uncomment when OpenAPI docs are needed (requires fumadocs-openapi v10 migration)
+// import { APIPage } from "./api-page";
+import defaultMdxComponents from "fumadocs-ui/mdx";
+import type { MDXComponents } from "mdx/types";
+import Image from "next/image";
+import Link from "next/link";
+import type { ImgHTMLAttributes, JSX } from "react";
+import type { UncontrolledProps } from "react-medium-image-zoom";
+import { AutoTypeTable } from "@/components/auto-type-table";
+import { CodeBlockCommand } from "@/components/code-block-command";
+import { CodeBlockWrapper } from "@/components/code-block-wrapper";
+import { CodeCollapsibleWrapper } from "@/components/code-collapsible-wrapper";
+import { CodeTabs } from "@/components/code-tabs";
+import { ComponentSource } from "@/components/component-source";
+import { CopyButton } from "@/components/copy-button";
+import { SignUpCTA } from "@/components/sign-up-cta";
+import { TypeTable } from "@/components/type-table";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Background } from "@/components/ui/background";
+import { Button } from "@/components/ui/button";
+import Icon from "@/components/ui/icons";
+import { getIconForLanguageExtension } from "@/components/ui/logos";
+import { Step, Steps } from "@/components/ui/steps";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { XEmbed } from "@/components/x-embed";
+import { cn } from "@/lib/utils";
+import { HighlightLine } from "../highlight-line";
+import { FrameworkInstallCommandTabs } from "../install/framework-install-command-tabs";
+import { ComponentPreview } from "./component-preview";
+import { ImageZoom } from "./image-zoom";
+import { QuickstartAIPrompt } from "./quickstart-ai-prompt";
+import { ScreenshotFrame } from "./screenshot-frame";
+import StyleTokenCascade from "./style-token-cascade";
+import ThemeScenarios from "./theme-scenarios";
+
+export const mdxComponents = {
+	...defaultMdxComponents,
+	h1: ({ className, ...props }: React.ComponentProps<"h1">) => (
+		<h1
+			className={cn(
+				"mt-2 scroll-m-28 font-bold font-heading text-3xl tracking-tight",
+				className
+			)}
+			{...props}
+		/>
+	),
+	h2: ({ className, ...props }: React.ComponentProps<"h2">) => (
+		<h2
+			className={cn(
+				"[&+p]:!mt-4 mt-12 scroll-m-28 font-heading font-medium text-2xl tracking-tight first:mt-0 lg:mt-20 *:[code]:text-2xl",
+				className
+			)}
+			id={props.children
+				?.toString()
+				.replace(/ /g, "-")
+				.replace(/'/g, "")
+				.replace(/\?/g, "")
+				.toLowerCase()}
+			{...props}
+		/>
+	),
+	h3: ({ className, ...props }: React.ComponentProps<"h3">) => (
+		<h3
+			className={cn(
+				"mt-8 scroll-m-28 font-heading font-semibold text-xl tracking-tight *:[code]:text-xl",
+				className
+			)}
+			{...props}
+		/>
+	),
+	h4: ({ className, ...props }: React.ComponentProps<"h4">) => (
+		<h4
+			className={cn(
+				"mt-8 scroll-m-28 font-heading font-medium text-lg tracking-tight",
+				className
+			)}
+			{...props}
+		/>
+	),
+	h5: ({ className, ...props }: React.ComponentProps<"h5">) => (
+		<h5
+			className={cn(
+				"mt-8 scroll-m-28 font-medium text-lg tracking-tight",
+				className
+			)}
+			{...props}
+		/>
+	),
+	h6: ({ className, ...props }: React.ComponentProps<"h6">) => (
+		<h6
+			className={cn(
+				"mt-8 scroll-m-28 font-medium text-base tracking-tight",
+				className
+			)}
+			{...props}
+		/>
+	),
+	a: ({ className, ...props }: React.ComponentProps<"a">) => (
+		// biome-ignore lint/nursery/useAnchorHref: ok
+		<a
+			className={cn("font-medium underline underline-offset-4", className)}
+			{...props}
+		/>
+	),
+	p: ({ className, ...props }: React.ComponentProps<"p">) => (
+		<p
+			className={cn("leading-relaxed [&:not(:first-child)]:mt-6", className)}
+			{...props}
+		/>
+	),
+	strong: ({ className, ...props }: React.HTMLAttributes<HTMLElement>) => (
+		<strong className={cn("font-medium", className)} {...props} />
+	),
+	ul: ({ className, ...props }: React.ComponentProps<"ul">) => (
+		<ul className={cn("my-6 ml-6 list-disc", className)} {...props} />
+	),
+	ol: ({ className, ...props }: React.ComponentProps<"ol">) => (
+		<ol className={cn("my-6 ml-6 list-decimal", className)} {...props} />
+	),
+	li: ({ className, ...props }: React.ComponentProps<"li">) => (
+		<li className={cn("mt-2", className)} {...props} />
+	),
+	blockquote: ({ className, ...props }: React.ComponentProps<"blockquote">) => (
+		<blockquote
+			className={cn("mt-6 border-l-2 pl-6 italic", className)}
+			{...props}
+		/>
+	),
+	hr: ({ ...props }: React.ComponentProps<"hr">) => (
+		<hr className="my-4 md:my-8" {...props} />
+	),
+	table: ({ className, ...props }: React.ComponentProps<"table">) => (
+		<div className="my-6 w-full overflow-y-auto">
+			<table
+				className={cn(
+					"relative w-full overflow-hidden border-none text-sm",
+					className
+				)}
+				{...props}
+			/>
+		</div>
+	),
+	tr: ({ className, ...props }: React.ComponentProps<"tr">) => (
+		<tr
+			className={cn("m-0 border-b last:border-b-none", className)}
+			{...props}
+		/>
+	),
+	th: ({ className, ...props }: React.ComponentProps<"th">) => (
+		<th
+			className={cn(
+				"px-4 py-2 text-left font-bold [&[align=center]]:text-center [&[align=right]]:text-right",
+				className
+			)}
+			{...props}
+		/>
+	),
+	td: ({ className, ...props }: React.ComponentProps<"td">) => (
+		<td
+			className={cn(
+				"px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right",
+				className
+			)}
+			{...props}
+		/>
+	),
+	pre: ({ className, children, ...props }: React.ComponentProps<"pre">) => (
+		<pre
+			className={cn(
+				"no-scrollbar min-w-0 overflow-x-auto px-4 py-3.5 outline-none has-[[data-slot=tabs]]:p-0 has-[[data-highlighted-line]]:px-0 has-[[data-line-numbers]]:px-0",
+				className
+			)}
+			{...props}
+		>
+			{children}
+		</pre>
+	),
+	figure: ({ className, ...props }: React.ComponentProps<"figure">) => (
+		<figure
+			className={cn(
+				"border border-dashed bg-background-50 dark:bg-background-100",
+				className
+			)}
+			{...props}
+		/>
+	),
+	figcaption: ({
+		className,
+		children,
+		...props
+	}: React.ComponentProps<"figcaption">) => {
+		const iconExtension =
+			"data-language" in props && typeof props["data-language"] === "string"
+				? getIconForLanguageExtension(props["data-language"])
+				: null;
+
+		return (
+			<figcaption
+				className={cn(
+					"flex items-center gap-2 border-0 text-code-foreground [&_svg]:size-4 [&_svg]:text-code-foreground [&_svg]:opacity-70",
+					className
+				)}
+				{...props}
+			>
+				{iconExtension}
+				{children}
+			</figcaption>
+		);
+	},
+	code: ({
+		className,
+		__raw__,
+		__src__,
+		__npm__,
+		__yarn__,
+		__pnpm__,
+		__bun__,
+		...props
+	}: React.ComponentProps<"code"> & {
+		__raw__?: string;
+		__src__?: string;
+		__npm__?: string;
+		__yarn__?: string;
+		__pnpm__?: string;
+		__bun__?: string;
+	}) => {
+		// Inline Code.
+		if (typeof props.children === "string") {
+			return (
+				<code
+					className={cn(
+						"relative border border-dashed bg-background-300 px-[0.3rem] py-[0.2rem] font-mono text-[0.8rem] outline-none dark:bg-background-400",
+						className
+					)}
+					{...props}
+				/>
+			);
+		}
+
+		// npm command.
+		const isNpmCommand = __npm__ && __yarn__ && __pnpm__ && __bun__;
+		if (isNpmCommand) {
+			return (
+				<CodeBlockCommand
+					__bun__={__bun__}
+					__npm__={__npm__}
+					__pnpm__={__pnpm__}
+					__yarn__={__yarn__}
+				/>
+			);
+		}
+
+		// Default codeblock.
+		return (
+			<>
+				{__raw__ && <CopyButton src={__src__} value={__raw__} />}
+				<code {...props} />
+			</>
+		);
+	},
+	Step,
+	Steps,
+	Image: ({
+		src,
+		className,
+		width,
+		height,
+		alt,
+		ref: _ref,
+		...props
+	}: React.ComponentProps<"img">) => (
+		<Image
+			alt={alt || ""}
+			className={cn("mt-6 border", className)}
+			height={Number(height)}
+			src={(src as string) || ""}
+			width={Number(width)}
+			{...props}
+		/>
+	),
+	img: (
+		props: JSX.IntrinsicAttributes &
+			ImageProps & {
+				zoomInProps?: ImgHTMLAttributes<HTMLImageElement>;
+				rmiz?: UncontrolledProps;
+			}
+	) => <ImageZoom {...props} />,
+	Tabs: ({ className, ...props }: React.ComponentProps<typeof Tabs>) => (
+		<Tabs className={cn("relative mt-6 w-full", className)} {...props} />
+	),
+	TabsList: ({
+		className,
+		...props
+	}: React.ComponentProps<typeof TabsList>) => (
+		<TabsList
+			className={cn(
+				"justify-start gap-4 bg-transparent px-2 md:px-0",
+				className
+			)}
+			{...props}
+		/>
+	),
+	TabsTrigger: ({
+		className,
+		...props
+	}: React.ComponentProps<typeof TabsTrigger>) => (
+		<TabsTrigger
+			className={cn(
+				"px-0 text-base text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent",
+				className
+			)}
+			{...props}
+		/>
+	),
+	TabsContent: ({
+		className,
+		...props
+	}: React.ComponentProps<typeof TabsContent>) => (
+		<TabsContent
+			className={cn(
+				"relative [&>.steps]:mt-6 [&_h3.font-heading]:font-medium [&_h3.font-heading]:text-base *:[figure]:first:mt-0",
+				className
+			)}
+			{...props}
+		/>
+	),
+	Tab: ({ className, ...props }: React.ComponentProps<"div">) => (
+		<div className={cn(className)} {...props} />
+	),
+	Button,
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+	// Alert,
+	// AlertTitle,
+	// AlertDescription,
+	// AspectRatio,
+	CodeTabs,
+	ComponentPreview,
+	ComponentSource,
+	CodeCollapsibleWrapper,
+	Alert,
+	AlertTitle,
+	AlertDescription,
+	// ComponentsList,
+	Link: ({ className, ...props }: React.ComponentProps<typeof Link>) => (
+		<Link
+			className={cn("font-medium underline underline-offset-4", className)}
+			{...props}
+		/>
+	),
+	LinkedCard: ({
+		className,
+		children,
+		...props
+	}: React.ComponentProps<typeof Link>) => (
+		<Link
+			className={cn(
+				"group relative w-full border bg-background-100 p-4 text-surface-foreground transition-colors hover:bg-background-200 sm:p-6",
+				className
+			)}
+			{...props}
+		>
+			<Background className="z-0 opacity-0 transition-all duration-300 group-hover:opacity-100" />
+			<div className="pointer-events-none relative inset-0 z-10 flex flex-col items-start gap-2 from-background-200 via-background-200 to-transparent transition-colors group-hover:bg-linear-to-t">
+				{children}
+			</div>
+		</Link>
+	),
+	CodeBlockWrapper: ({ ...props }) => (
+		<CodeBlockWrapper className="border" {...props} />
+	),
+	AutoTypeTable,
+	TypeTable,
+	StyleTokenCascade,
+	ThemeScenarios,
+	QuickstartAIPrompt,
+	ScreenshotFrame,
+	Icon,
+	FrameworkInstallCommandTabs,
+	// TODO: Uncomment when OpenAPI docs are needed (requires fumadocs-openapi v10 migration)
+	// APIPage,
+	HighlightLine,
+	XEmbed,
+	SignUpCTA,
+} as MDXComponents;

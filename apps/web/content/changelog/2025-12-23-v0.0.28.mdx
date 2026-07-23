@@ -1,0 +1,75 @@
+---
+version: "0.0.28"
+description: "Performance improvements, controlled widget support, and enhanced contact management"
+tiny-excerpt: "Controlled widget, smart positioning"
+date: "2025-12-23"
+author: "Cossistant Team"
+---
+
+Significant performance improvements for the React widget with better composability, automatic positioning, and a new contact management system.
+
+### Support Widget
+
+- <HighlightLine variant="new">
+    **Controlled mode**: Widget can now be controlled with `open` and `setOpen`
+    props.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **Custom components**: Support for custom trigger and content components.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **Smart positioning**: Automatic collision avoidance ensures visibility.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **Event handling**: New event system for analytics integration.
+  </HighlightLine>
+- <HighlightLine variant="updated">
+    **Performance**: Reduced queries and improved overall performance.
+  </HighlightLine>
+
+### Dashboard
+
+- <HighlightLine variant="new">
+    **Contact management**: Mini-CRM system to manage contact information.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **File sharing**: Upload images and documents in conversations.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **AI typing preview**: See when AI is composing a response.
+  </HighlightLine>
+
+### Bug Fixes
+
+- <HighlightLine variant="fixed">
+    **WebSocket**: Improved connection management and reliability.
+  </HighlightLine>
+- <HighlightLine variant="fixed">
+    **Timeline**: Enhanced conversation scrolling behavior.
+  </HighlightLine>
+- <HighlightLine variant="fixed">
+    **Types**: Fixed typing issues across the codebase.
+  </HighlightLine>
+
+### Upgrade
+
+<FrameworkInstallCommandTabs version="0.0.28" />
+
+### Example
+
+```tsx showLineNumbers
+import { Support } from "@cossistant/next";
+
+export function App() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Support
+      open={open}
+      onOpenChange={setOpen}
+      avoidCollisions={true}
+      onEvent={(event) => console.log("Widget event:", event)}
+    />
+  );
+}
+```

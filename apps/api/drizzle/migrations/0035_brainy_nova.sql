@@ -1,0 +1,1 @@
+ALTER TABLE "ai_agent" ADD COLUMN "onboarding_completed_at" timestamp;

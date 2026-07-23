@@ -1,0 +1,1 @@
+ALTER TABLE "link_source" ADD COLUMN "ignored_urls" text[];

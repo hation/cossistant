@@ -1,0 +1,208 @@
+---
+title: Types Reference
+description: Canonical type reference for Support props, hooks, events, and shared widget data.
+search:
+  kind: type
+  tags:
+    - types
+    - reference
+    - support
+    - api
+  aliases:
+    - DefaultMessage
+    - PublicVisitor
+    - TimelineItem
+    - Conversation
+    - CossistantClient
+---
+
+## Use this page when
+
+Use this page as the shared type index behind the Support docs.
+
+- you want the exact shape of a prop, event payload, or shared model
+- a guide links to a named type like `TimelineItem`, `Conversation`, or `PublicVisitor`
+- you are building custom UI on top of hooks, events, or primitives
+
+If you are still deciding how to shape the widget, start with [Overview](/docs/support-component), [Change One Thing](/docs/support-component/customization), or [Pages & Layouts](/docs/support-component/routing).
+
+## Widget Types
+
+### DefaultMessage
+
+Structure for pre-conversation welcome messages.
+
+<auto-type-table
+  path="packages/types/src/index.ts"
+  name="DefaultMessage"
+  variant="property"
+/>
+
+### VisitorMetadata
+
+Key-value pairs for storing custom data about contacts.
+
+<auto-type-table
+  path="packages/types/src/api/visitor.ts"
+  name="VisitorMetadataReference"
+  variant="property"
+/>
+
+### SenderType
+
+Enum defining who can send messages.
+
+<auto-type-table
+  path="packages/types/src/enums.ts"
+  name="SenderTypeReference"
+  type="typeof SenderType"
+  variant="property"
+/>
+
+### SupportMode
+
+Layout mode for the widget.
+
+```tsx
+type SupportMode = "floating" | "responsive";
+```
+
+### TriggerRenderProps
+
+Props provided to custom trigger render functions.
+
+<auto-type-table
+  path="packages/react/src/support/types.ts"
+  name="TriggerRenderProps"
+  variant="property"
+/>
+
+### SupportHandle
+
+Imperative handle for programmatic widget control via refs.
+
+<auto-type-table
+  path="packages/react/src/support/context/handle.tsx"
+  name="SupportHandle"
+  variant="property"
+/>
+
+## Visitor And Website Data
+
+### PublicVisitor
+
+The visitor object returned by the widget, representing an anonymous or
+identified visitor.
+
+<auto-type-table
+  path="packages/types/src/api/visitor.ts"
+  name="PublicVisitor"
+  variant="property"
+/>
+
+### PublicContact
+
+Contact information for an identified visitor.
+
+<auto-type-table
+  path="packages/types/src/api/visitor.ts"
+  name="PublicContact"
+  variant="property"
+/>
+
+### PublicWebsiteResponse
+
+Website configuration and agent availability information.
+
+<auto-type-table
+  path="packages/types/src/api/website.ts"
+  name="PublicWebsiteResponse"
+  variant="property"
+/>
+
+### HumanAgent
+
+Information about a human support agent.
+
+<auto-type-table
+  path="packages/types/src/api/website.ts"
+  name="HumanAgent"
+  variant="property"
+/>
+
+### AIAgent
+
+Information about an AI support agent.
+
+<auto-type-table
+  path="packages/types/src/api/website.ts"
+  name="AIAgent"
+  variant="property"
+/>
+
+## Conversations And Messages
+
+### Conversation
+
+Conversation record used throughout the support widget and event payloads.
+
+<auto-type-table
+  path="packages/types/src/schemas.ts"
+  name="Conversation"
+  variant="property"
+/>
+
+### TimelineItem
+
+Timeline item payload used for widget messages, events, and AI tool output.
+
+<auto-type-table
+  path="packages/types/src/api/timeline-item.ts"
+  name="TimelineItem"
+  variant="property"
+/>
+
+## Hook And Event Types
+
+### IdentifyParams
+
+Parameters for the `identify()` function.
+
+<auto-type-table
+  path="packages/react/src/hooks/use-visitor.ts"
+  name="IdentifyParams"
+  variant="property"
+/>
+
+### MessageComposer
+
+State and actions returned by `useConversationPage` for message composition.
+
+<auto-type-table
+  path="packages/react/src/hooks/use-conversation-page.ts"
+  name="MessageComposer"
+  variant="property"
+/>
+
+### SupportEvent
+
+Union type of all possible widget events.
+
+<auto-type-table
+  path="packages/react/src/support/context/events.tsx"
+  name="SupportEventReference"
+  variant="property"
+/>
+
+## Client Types
+
+### CossistantClient
+
+The low-level client instance for advanced programmatic control. The table
+below highlights the main public stores and methods exposed by the client.
+
+<auto-type-table
+  path="packages/core/src/client.ts"
+  name="CossistantClientReference"
+  variant="property"
+/>

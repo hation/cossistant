@@ -1,0 +1,31 @@
+{
+  "name": "@cossistant/example-nextjs-tailwind",
+  "version": "0.1.5",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack --port 3345",
+    "build": "next build",
+    "start": "next start",
+    "test:e2e": "playwright test",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "@cossistant/core": "workspace:*",
+    "@cossistant/next": "workspace:*",
+    "next": "16.2.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*",
+    "@playwright/test": "^1.60.0",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^25.0.10",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  }
+}

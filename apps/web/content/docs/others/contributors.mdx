@@ -1,0 +1,302 @@
+---
+title: Contribute to Cossistant
+description: Set up the Cossistant monorepo locally, understand the repo layout, and ship contribution-ready pull requests.
+keywords:
+  - contribute to Cossistant
+  - Cossistant contributor guide
+  - Cossistant local setup
+  - Cossistant monorepo
+---
+
+Use this guide if you want to contribute code, docs, or examples to Cossistant. It walks through the local setup, the services that should be running, the parts of the monorepo you will touch most often, and the checks to run before you open a pull request.
+
+## Prerequisites
+
+Before you start, make sure your machine has:
+
+- **Docker Desktop** - Required for running Postgres and Redis locally
+- **Bun v1.2+** - Our package manager and runtime ([install Bun](https://bun.sh))
+- **Git** - For version control
+- **Node-compatible shell tooling** - Helpful for local debugging and scripts
+
+## Quick Start
+
+Clone the monorepo, install dependencies, and start the local stack:
+
+```bash
+git clone https://github.com/cossistantcom/cossistant.git
+cd cossistant
+bun install --workspaces
+bun dev
+```
+
+That's it! The `bun dev` command will:
+
+1. Start Docker Compose (Postgres + Redis containers)
+2. Start the API server with Upstash Workflow in local mode
+3. Start the Next.js web application
+
+<Callout type="info">
+  **Upstash Workflow runs locally** - No account needed! When the server starts,
+  you'll see the workflow credentials displayed in your console. These
+  credentials don't change between restarts.
+</Callout>
+
+## Local Services At A Glance
+
+After `bun dev` finishes, you should have:
+
+- **Web app**: `http://localhost:3000` for the landing site, docs, and dashboard
+- **API server**: `http://localhost:3001` for REST, tRPC, WebSocket, and auth flows
+- **Postgres**: `localhost:5432` for relational data
+- **Redis**: `localhost:6379` for queues, caching, and real-time support
+- **Upstash Workflow local mode**: credentials printed in the API console output
+
+## Database Setup
+
+### Default connection
+
+The local database connection string is:
+
+```
+postgresql://postgres:postgres@localhost:5432/cossistant
+```
+
+This is automatically configured when you run `bun dev`.
+
+### Run migrations
+
+After starting the services for the first time, run the database migrations:
+
+```bash
+cd apps/api
+bun db:migrate
+```
+
+### Seed data (optional)
+
+To populate the database with sample data for development:
+
+```bash
+cd apps/api
+bun db:seed
+```
+
+### Make schema changes
+
+When you need to modify the database schema:
+
+1. Update the schema files in `apps/api/src/db/schema`
+2. Generate a migration:
+   ```bash
+   cd apps/api
+   bun db:generate
+   ```
+3. Apply the migration:
+   ```bash
+   bun db:migrate
+   ```
+
+### Open Database Studio
+
+To explore the database with Drizzle Studio:
+
+```bash
+cd apps/api
+bun db:studio
+```
+
+## Optional Storage Setup
+
+S3 file storage is **only needed if you're testing file uploads**. For most development work, you can skip this.
+
+If you do need S3:
+
+1. Navigate to the infrastructure directory:
+   ```bash
+   cd infra/aws/s3-public-setup
+   ```
+2. Follow the [Storage guide](/docs/self-host/storage) for the recommended AWS setup, the runtime env vars Cossistant expects, and a verification checklist.
+3. The Terraform configuration will create the AWS resources needed for signed uploads and public asset reads.
+
+## Repo Map For Contributors
+
+These are the directories most contributors touch:
+
+### Apps
+
+- **`apps/api`** - Hono + tRPC backend with WebSocket server
+  - RESTful and tRPC APIs
+  - Real-time WebSocket communication
+  - Database queries and mutations
+  - Authentication via Better Auth
+  - Background jobs via Upstash Workflow
+
+- **`apps/web`** - Next.js application
+  - Marketing landing page
+  - Documentation (Fumadocs)
+  - Dashboard interface
+
+### Packages
+
+- **`packages/react`** - Main React SDK
+  - Headless hooks and primitives
+  - Pre-built `<Support />` component
+  - Real-time WebSocket integration
+
+- **`packages/next`** - Next.js-specific SDK
+  - Server Component support
+  - Next.js optimized bindings
+
+- **`packages/core`** - Shared client logic
+  - State management stores
+  - REST and WebSocket clients
+  - Utility functions
+
+- **`packages/types`** - TypeScript definitions
+  - Shared types across all packages
+  - API schemas and validation
+
+- **`packages/transactional`** - Email templates
+  - React Email templates
+  - Transactional email utilities
+
+- **`packages/location`** - Location utilities
+  - Country and timezone data
+  - Geolocation helpers
+
+## Contributor Workflow
+
+### Root commands
+
+Run these from the repo root:
+
+```bash
+# Start all services
+bun dev
+
+# Build all packages
+bun run build
+
+# Build specific package
+bun run build --filter @cossistant/react
+
+# Run linter and auto-fix issues
+bun run fix
+
+# Type check all packages
+bun run check-types
+
+# Check documentation links
+bun run docs:links
+```
+
+### API-specific commands
+
+Run these from `apps/api`:
+
+```bash
+# Start API server only
+bun run dev
+
+# Run migrations
+bun run db:migrate
+
+# Seed database
+bun run db:seed
+
+# Open Drizzle Studio
+bun run db:studio
+
+# Generate Better Auth schema
+bun run better-auth:generate-schema
+```
+
+## Quality Checks Before A Pull Request
+
+Run the smallest set of checks that matches your change:
+
+```bash
+# Auto-fix linting issues across the repo
+bun run fix
+
+# Verify TypeScript types
+bun run check-types
+
+# Run docs link checks for documentation edits
+bun run docs:links
+
+# Run tests in the package or app you changed
+cd packages/react
+bun test
+```
+
+If you changed the API, run tests from `apps/api`. If you changed docs or marketing pages, make sure the affected pages still build and render cleanly.
+
+## Pull Request Checklist
+
+Before you open or merge a PR:
+
+1. Use a clear Conventional Commits title such as `fix: tighten llms route indexing headers`.
+2. Explain what changed, why it changed, and any follow-up work still pending.
+3. Link the related issue, discussion, or support thread when there is one.
+4. Add screenshots or recordings for UI changes.
+5. Add a changeset when you touch published packages such as `@cossistant/react` or `@cossistant/next`.
+6. Mention any environment variables, migrations, or manual QA steps reviewers need.
+
+## Testing Notes
+
+Cossistant uses Bun's built-in test runner. Tests are colocated with source files using the `*.test.ts` naming convention.
+
+```bash
+# Run tests in a specific package
+cd packages/react
+bun test
+
+# Watch mode
+bun test --watch
+
+# Coverage report
+bun test --coverage
+```
+
+## Troubleshooting
+
+- **`bun dev` fails immediately**: confirm Docker Desktop is running and ports `3000`, `3001`, `5432`, and `6379` are not already taken.
+- **Database errors after pulling main**: rerun `bun db:migrate` from `apps/api` to catch up with schema changes.
+- **Missing dependencies or stale lockfile state**: rerun `bun install --workspaces` from the repo root.
+- **Docs pages render but links fail**: run `bun run docs:links` before opening the PR.
+- **You only need package-level tests**: run `bun test` inside the package you changed instead of the entire monorepo.
+
+## Commit Message Format
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages:
+
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `chore:` - Maintenance tasks
+- `refactor:` - Code refactoring
+- `test:` - Test updates
+
+Example: `feat: add message reactions to timeline items`
+
+## Changesets
+
+For changes to published packages (`@cossistant/react`, `@cossistant/next`), add a changeset:
+
+```bash
+bun run changeset
+```
+
+Follow the prompts to describe your changes. This will be used to generate changelogs and version bumps.
+
+## Getting Help
+
+- **Documentation**: [cossistant.com/docs](https://cossistant.com/docs)
+- **Discord**: [Join our community](https://discord.gg/vQkPjgvzcc)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/cossistantcom/cossistant/issues)
+
+## License
+
+Cossistant is licensed under **AGPL-3.0** for non-commercial use. For commercial use, please contact us at [anthony@cossistant.com](mailto:anthony@cossistant.com).

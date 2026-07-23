@@ -1,0 +1,5 @@
+{
+  "retryCount": 1,
+  "timeout": "10s",
+  "ignorePatterns": [{ "pattern": "https://cossistant/docs/quickstart" }]
+}

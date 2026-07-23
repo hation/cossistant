@@ -1,0 +1,35 @@
+DESCRIPTION >
+	Dashboard analytics metrics from conversation lifecycle events.
+	Returns median response time, median resolution time, and AI handled rate
+	for both current and previous periods in a single call.
+
+NODE metrics
+SQL >
+	%
+	SELECT
+		event_type,
+		quantile(0.5)(duration_seconds) as median_duration,
+		count() as event_count,
+		'current' as period
+	FROM conversation_metrics
+	WHERE website_id = {{ String(website_id) }}
+		AND timestamp >= parseDateTimeBestEffort({{ String(date_from, '2024-01-01 00:00:00') }})
+		AND timestamp < parseDateTimeBestEffort({{ String(date_to, '2024-12-31 23:59:59') }})
+		AND event_type IN ('conversation_started', 'first_response', 'conversation_resolved', 'ai_resolved')
+	GROUP BY event_type
+
+	UNION ALL
+
+	SELECT
+		event_type,
+		quantile(0.5)(duration_seconds) as median_duration,
+		count() as event_count,
+		'previous' as period
+	FROM conversation_metrics
+	WHERE website_id = {{ String(website_id) }}
+		AND timestamp >= parseDateTimeBestEffort({{ String(prev_date_from, '2024-01-01 00:00:00') }})
+		AND timestamp < parseDateTimeBestEffort({{ String(prev_date_to, '2024-12-31 23:59:59') }})
+		AND event_type IN ('conversation_started', 'first_response', 'conversation_resolved', 'ai_resolved')
+	GROUP BY event_type
+
+TYPE endpoint

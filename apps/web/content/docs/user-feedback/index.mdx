@@ -1,0 +1,368 @@
+---
+title: User feedback
+description: Collect topic, rating, and comment feedback with the drop-in widget or provider-optional hooks.
+search:
+  kind: component
+  tags:
+    - feedback
+    - widget
+    - useFeedbackForm
+    - useSubmitFeedback
+    - shadcn
+  aliases:
+    - Feedback
+    - useFeedbackForm
+    - useSubmitFeedback
+    - user feedback
+    - shadcn feedback
+---
+
+User feedback is more useful when it is not anonymous.
+
+Cossistant feedback can use the same visitor context as `SupportProvider`. When
+a visitor leaves a rating, topic, or comment, the submission can be attached to
+the visitor, and to the contact when that visitor is identified. That means your
+team can understand who was blocked, see the context around the feedback, and
+follow up in a conversation instead of reading a detached survey response.
+
+Use the default `<Feedback />` widget when you want the fastest path. Use
+`useFeedbackForm` when you want the same feedback engine inside your own shadcn
+UI. For fully custom feedback surfaces, pass an explicit `client`, `visitorId`,
+and optional `contactId` instead of wrapping that subtree in `SupportProvider`.
+
+## Before you start
+
+For the drop-in `<Feedback />` widget, complete the
+<Link href="/docs/quickstart/react">React quickstart</Link> first. Your app
+should already have:
+
+- `@cossistant/react` installed
+- `SupportProvider` configured with your public key
+- one Cossistant CSS entrypoint imported at your app root
+
+```tsx title="src/main.tsx"
+import { SupportProvider } from "@cossistant/react";
+import type { ReactNode } from "react";
+import "@cossistant/react/styles.css";
+
+export function AppRoot({ children }: { children: ReactNode }) {
+  return <SupportProvider publicKey="pk_test_xxxx">{children}</SupportProvider>;
+}
+```
+
+`SupportProvider` gives the default widget its client, website, visitor, and
+contact context. The feedback hooks can also read that context, but it is a
+fallback: when you pass an explicit `client`, you can use them outside
+`SupportProvider`.
+
+## Fastest path
+
+Render the default widget when you want a complete feedback popover without
+owning the UI.
+
+```tsx title="src/App.tsx"
+import { Feedback } from "@cossistant/react";
+
+export function App() {
+  return (
+    <Feedback
+      topics={["Bug", "Feature request", "UX", "Other"]}
+      trigger="product_feedback"
+    />
+  );
+}
+```
+
+The `trigger` value is your label for why this feedback was collected. Use names
+like `product_feedback`, `churn`, `nps_survey`, or
+`conversation_resolved`.
+
+## Install the shadcn examples
+
+The examples below use Cossistant for feedback state and shadcn components for
+the interface.
+
+If Cossistant is not installed yet:
+
+```bash
+npm install @cossistant/react
+```
+
+Provider-free examples that create a client directly also need the core package:
+
+```bash
+npm install @cossistant/core
+```
+
+Install the shadcn components used by the examples:
+
+```bash
+npx shadcn@latest add button popover select textarea toggle-group
+```
+
+Then open the **Code** tab on either preview and copy the component into your
+app. Both examples import `useFeedbackForm` from `@cossistant/react/feedback`,
+so they can submit through the same visitor and contact context as your support
+widget.
+
+## Emoji feedback
+
+Start with a compact popover: topic, comment, rating, and a small send button.
+
+<ComponentPreview
+  name="user-feedback-emoji"
+  sizeClasses="min-h-[220px] md:min-h-[260px]"
+/>
+
+## Star feedback
+
+The same hook can power a five-star rating UI.
+
+<ComponentPreview
+  name="user-feedback-stars"
+  sizeClasses="min-h-[220px] md:min-h-[260px]"
+/>
+
+## Build your own
+
+Use `useFeedbackForm` when you want full control over the UI but do not want to
+rebuild form state, validation, or submission plumbing. Omit `client` to use the
+nearest `SupportProvider`, or pass `client`, `visitorId`, and optional
+`contactId` for provider-free usage.
+
+```tsx title="components/product-feedback.tsx"
+"use client";
+
+import { useFeedbackForm } from "@cossistant/react/hooks/use-feedback-form";
+
+export function ProductFeedback() {
+  const feedback = useFeedbackForm({
+    topics: ["Bug", "Feature request", "UX", "Other"],
+    trigger: "product_feedback",
+    commentRequired: true,
+  });
+
+  return (
+    <form onSubmit={feedback.handleSubmit}>
+      <select
+        aria-invalid={feedback.fields.topic.isMissing}
+        onBlur={feedback.fields.topic.handleBlur}
+        onChange={(event) => feedback.handleTopicChange(event.target.value)}
+        value={feedback.topic}
+      >
+        <option value="">Select topic</option>
+        {feedback.availableTopics.map((topic) => (
+          <option key={topic} value={topic}>
+            {topic}
+          </option>
+        ))}
+      </select>
+
+      <textarea
+        aria-invalid={feedback.fields.comment.isMissing}
+        onBlur={feedback.fields.comment.handleBlur}
+        onChange={(event) => feedback.handleCommentChange(event.target.value)}
+        value={feedback.comment}
+      />
+
+      {[1, 2, 3, 4, 5].map((rating) => (
+        <button
+          key={rating}
+          onClick={() => feedback.handleRatingSelect(rating)}
+          type="button"
+        >
+          {rating}
+        </button>
+      ))}
+
+      <button disabled={feedback.submit.disabled} type="submit">
+        {feedback.submit.label}
+      </button>
+    </form>
+  );
+}
+```
+
+`useFeedbackForm` manages the moving pieces that every feedback UI needs:
+
+- open state with `open`, `setOpen`, and `handleOpenChange`
+- rating state with `rating`, `hoveredRating`, `handleRatingSelect`, and `handleRatingHoverChange`
+- topic and comment state with normalized values
+- validation state for required rating, topics, and comments
+- pending, error, and submitted states
+- success actions with `sendAnother` and `done`
+
+The most common options are:
+
+- `client`: explicit `CossistantClient` for provider-free feedback
+- `topics`: the selectable feedback categories
+- `defaultTopic`: a preselected topic from `topics`
+- `trigger`: the reason this feedback form appeared
+- `source`: where this feedback came from, defaults to `widget`
+- `conversationId`: attach the feedback to a specific support conversation
+- `visitorId`: required when no provider context supplies a visitor
+- `contactId`: attach feedback to an identified contact
+- `commentRequired`: require a written comment before submit
+- `defaultOpen`: start the popover or dialog open
+- `onSuccess`: run code after Cossistant stores the feedback
+- `onError`: handle a failed submission
+
+### Provider-free feedback form
+
+```tsx title="components/provider-free-feedback.tsx"
+"use client";
+
+import { CossistantClient } from "@cossistant/core";
+import { useFeedbackForm } from "@cossistant/react/hooks/use-feedback-form";
+
+const client = new CossistantClient({ publicKey: "pk_test_xxxx" });
+
+export function ProviderFreeFeedback({ visitorId }: { visitorId: string }) {
+  const feedback = useFeedbackForm({
+    client,
+    visitorId,
+    source: "headless",
+    topics: ["Bug", "Feature request", "UX", "Other"],
+  });
+
+  return (
+    <form onSubmit={feedback.handleSubmit}>
+      <button onClick={() => feedback.handleRatingSelect(5)} type="button">
+        Great
+      </button>
+      <button disabled={feedback.submit.disabled} type="submit">
+        {feedback.submit.label}
+      </button>
+    </form>
+  );
+}
+```
+
+## Lower-level submit API
+
+Use `useSubmitFeedback` when you already own the entire form and only need the
+mutation. It follows the same provider-optional rule: omit `client` to use
+`SupportProvider`, or pass explicit runtime inputs for a headless form.
+
+```tsx title="components/custom-feedback-submit.tsx"
+"use client";
+
+import { useSubmitFeedback } from "@cossistant/react/hooks/use-submit-feedback";
+
+export function CustomFeedbackSubmit() {
+  const feedback = useSubmitFeedback({});
+
+  async function submit() {
+    await feedback.mutateAsync({
+      rating: 5,
+      topic: "UX",
+      comment: "The new onboarding screen is much clearer.",
+      trigger: "onboarding_feedback",
+    });
+  }
+
+  return (
+    <button disabled={feedback.isPending} onClick={submit} type="button">
+      Send feedback
+    </button>
+  );
+}
+```
+
+When `client` is omitted, `useSubmitFeedback` reads the Cossistant client,
+visitor, website, and contact context from `SupportProvider`. In most widget
+apps, pass `rating`, `topic`, `comment`, `trigger`, and optionally
+`conversationId`. The hook fills `visitorId` and `contactId` from context.
+
+For provider-free forms, pass a client and visitor explicitly:
+
+```tsx title="components/headless-feedback-submit.tsx"
+"use client";
+
+import { CossistantClient } from "@cossistant/core";
+import { useSubmitFeedback } from "@cossistant/react/hooks/use-submit-feedback";
+
+const client = new CossistantClient({ publicKey: "pk_test_xxxx" });
+
+export function HeadlessFeedbackSubmit({ visitorId }: { visitorId: string }) {
+  const feedback = useSubmitFeedback({ client });
+
+  return (
+    <button
+      disabled={feedback.isPending}
+      onClick={() =>
+        feedback.mutate({
+          rating: 5,
+          source: "headless",
+          visitorId,
+        })
+      }
+      type="button"
+    >
+      Send feedback
+    </button>
+  );
+}
+```
+
+Only pass `visitorId` or `contactId` manually if you are building a lower-level
+integration and you know you need to override the context.
+
+## Feedback data
+
+Every submission stores:
+
+- `rating`: required, from 1 to 5
+- `topic`: optional structured category
+- `comment`: optional written feedback
+- `trigger`: optional label for what prompted the form
+- `source`: defaults to `widget`
+- `conversationId`: optional conversation link
+- `visitorId`: the visitor who left the feedback
+- `contactId`: the identified contact, when the visitor has one
+
+That association is the important part. A low rating from a signed-in customer
+can become a real support follow-up, not just a number in a dashboard.
+
+## Hook exports
+
+`useFeedbackForm` and `useSubmitFeedback` are exported from
+`@cossistant/react/hooks`, `@cossistant/react/feedback`, and explicit deep
+imports like `@cossistant/react/hooks/use-feedback-form`. Next.js apps can use
+the matching `@cossistant/next/hooks` and `@cossistant/next/feedback` exports.
+
+Provider-optional hooks treat `client` carefully: omitting it means "read
+provider context", while passing `client: null` intentionally disables provider
+fallback.
+
+## Type reference
+
+### Feedback props
+
+<auto-type-table
+  path="packages/react/src/feedback/index.tsx"
+  name="FeedbackProps"
+/>
+
+### useFeedbackForm options
+
+<auto-type-table
+  path="packages/react/src/hooks/use-feedback-form.ts"
+  name="UseFeedbackFormOptions"
+/>
+
+### useFeedbackForm result
+
+<auto-type-table
+  path="packages/react/src/hooks/use-feedback-form.ts"
+  name="UseFeedbackFormResult"
+  variant="return"
+/>
+
+### Submit feedback variables
+
+<auto-type-table
+  path="packages/react/src/hooks/use-submit-feedback.ts"
+  name="SubmitFeedbackVariables"
+  variant="parameter"
+/>

@@ -1,0 +1,120 @@
+---
+version: "0.2.0"
+description: "Script tag embeds, automatic shadcn theming, and AI knowledge clarification"
+tiny-excerpt: "Script embeds and AI clarification"
+date: "2026-04-20"
+author: "Cossistant Team"
+discord-announcement: |
+  Cossistant v0.2.0 is live.
+  You can now ship the widget with a simple script tag, inherit shadcn theming automatically, and let the AI ask for clarification when knowledge is missing.
+  Read the full changelog: https://cossistant.com/changelog/2026-04-20-v0.2.0
+x-announcement: |
+  Cossistant v0.2.0 is out: script tag embeds, automatic shadcn theming, and AI clarification when knowledge is missing.
+  https://cossistant.com/changelog/2026-04-20-v0.2.0
+---
+
+Major improvements to widget flexibility with script tag embeds, automatic theme detection, and smarter AI knowledge handling.
+
+<ScreenshotFrame
+  backgroundColor="bg-background-300"
+  backgroundImageSrc=""
+  items={[
+    {
+      alt: "Clarify knowledge gaps",
+      browserUrl: "https://cossistant.com",
+      legend: "Clarify knowledge gaps",
+      src: "https://cdn.cossistant.com/changelog/2026-04-20.png",
+      type: "browser",
+    },
+
+]}
+type="browser"
+/>
+
+### Highlights
+
+- <HighlightLine variant="new">
+    **Script tag embeds**: Install Cossistant via CDN without React using a
+    simple script tag.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **Auto shadcn detection**: Widget automatically inherits your shadcn theme
+    variables.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **Knowledge clarification**: AI asks for clarification when it spots
+    knowledge gaps.
+  </HighlightLine>
+
+### Support Widget
+
+- <HighlightLine variant="new">
+    **Browser package**: New `@cossistant/browser` package for non-React apps
+    via script tag.
+  </HighlightLine>
+- <HighlightLine variant="updated">
+    **Theme detection**: Automatically detects and uses shadcn CSS variables
+    when present.
+  </HighlightLine>
+- <HighlightLine variant="updated">
+    **Modular core**: Refactored widget architecture for better customization
+    and reusability.
+  </HighlightLine>
+
+### Dashboard
+
+- <HighlightLine variant="new">
+    **Knowledge clarification requests**: Review and respond to AI knowledge gap
+    requests.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **Visitor geolocation**: Enhanced visitor detail pages with location data.
+  </HighlightLine>
+- <HighlightLine variant="updated">
+    **Conversation timeline**: Improved timeline UI with better loading states.
+  </HighlightLine>
+
+### Bug Fixes & Improvements
+
+- <HighlightLine variant="fixed">
+    **AI reliability**: More consistent AI agent responses with improved error
+    handling.
+  </HighlightLine>
+- <HighlightLine variant="fixed">
+    **Vite support**: Better compatibility with Vite-based projects.
+  </HighlightLine>
+- <HighlightLine variant="fixed">
+    **Timeline rendering**: Fixed conversation timeline schema mismatches.
+  </HighlightLine>
+
+### Upgrade
+
+```bash
+npm install @cossistant/react@0.2.0 @cossistant/next@0.2.0
+```
+
+### Use Cossistant with a script tag
+
+Perfect to use outside of React, with Vue, or in tools like Framer and Webflow.
+You can point to a specific version for predictable upgrades, or use `latest`
+to always load the newest release.
+
+```html showLineNumbers
+<!-- Pin to a specific version -->
+<script async src="https://cdn.cossistant.com/widget/0.2.0/loader.js"></script>
+<script>
+  window.Cossistant.init({
+    publicKey: "pk_live_...",
+  });
+</script>
+```
+
+```html showLineNumbers
+<!-- Or always use the latest release -->
+<script async src="https://cdn.cossistant.com/widget/latest/loader.js"></script>
+<script>
+  window.Cossistant.init({
+    publicKey: "pk_live_...",
+  });
+</script>
+```

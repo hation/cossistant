@@ -1,0 +1,32 @@
+DESCRIPTION >
+	Geo-aggregated visitor presence for live map visualization.
+
+NODE locations
+SQL >
+	%
+	SELECT
+		latitude,
+		longitude,
+		any(city) AS city,
+		any(country_code) AS country_code,
+		count() AS entity_count
+	FROM (
+		SELECT
+			visitor_id,
+			argMaxIf(city, timestamp, city != '') AS city,
+			argMaxIf(country_code, timestamp, country_code != '') AS country_code,
+			maxIf(latitude, latitude != 0) AS latitude,
+			maxIf(longitude, longitude != 0) AS longitude,
+			max(timestamp) AS last_seen
+		FROM visitor_activity_events
+		WHERE website_id = {{ String(website_id) }}
+			AND timestamp > now() - INTERVAL 30 MINUTE
+		GROUP BY visitor_id
+	)
+	WHERE last_seen > now() - INTERVAL {{ Int32(minutes, 5) }} MINUTE
+		AND latitude != 0
+		AND longitude != 0
+	GROUP BY latitude, longitude
+	ORDER BY entity_count DESC
+
+TYPE endpoint

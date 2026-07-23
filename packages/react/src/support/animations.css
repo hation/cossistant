@@ -1,0 +1,194 @@
+/*
+ * Widget animations — pure CSS replacements for motion library.
+ * All keyframes are prefixed with `co-` to avoid conflicts.
+ * Widget utility classes stay scoped under `.cossistant`.
+ * Shared spinner classes use dedicated data attributes so dashboard and widget
+ * can reuse them without leaking package-owned class selectors.
+ */
+
+@layer utilities {
+	/* ------------------------------------------------------------------ */
+	/* Keyframes                                                          */
+	/* ------------------------------------------------------------------ */
+
+	@keyframes co-fade-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@keyframes co-fade-in-scale {
+		from {
+			opacity: 0;
+			transform: scale(0.95);
+		}
+	}
+
+	@keyframes co-slide-up-blur {
+		from {
+			opacity: 0;
+			filter: blur(8px);
+			transform: translateY(10px);
+		}
+	}
+
+	@keyframes co-slide-up-fade {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+	}
+
+	@keyframes co-scale-in {
+		from {
+			opacity: 0;
+			transform: scale(0);
+		}
+	}
+
+	@keyframes co-panel-in {
+		from {
+			opacity: 0;
+			filter: blur(6px);
+			transform: scale(0.95);
+		}
+	}
+
+	@keyframes co-panel-out {
+		to {
+			opacity: 0;
+			filter: blur(6px);
+			transform: scale(0.95);
+		}
+	}
+
+	@keyframes co-spinner-orbit {
+		0%,
+		100% {
+			opacity: 0.2;
+		}
+
+		45% {
+			opacity: 0.6;
+		}
+
+		55% {
+			opacity: 1;
+		}
+	}
+
+	@keyframes co-spinner-wave {
+		0%,
+		100% {
+			opacity: 0.18;
+		}
+
+		50% {
+			opacity: 1;
+		}
+	}
+
+	@keyframes co-spinner-pulse {
+		0%,
+		100% {
+			opacity: 0.22;
+		}
+
+		50% {
+			opacity: 1;
+		}
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Animation classes (scoped to widget)                               */
+	/* ------------------------------------------------------------------ */
+
+	[data-co-spinner] {
+		display: inline-grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-rows: repeat(3, minmax(0, 1fr));
+		width: var(--co-spinner-size, 16px);
+		height: var(--co-spinner-size, 16px);
+		gap: var(--co-spinner-gap, 2px);
+		vertical-align: middle;
+	}
+
+	[data-co-spinner-cell] {
+		background: currentColor;
+		animation-duration: 1.15s;
+		animation-delay: var(--co-spinner-delay, 0ms);
+		animation-iteration-count: infinite;
+		animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		animation-fill-mode: both;
+		will-change: opacity;
+	}
+
+	[data-co-spinner][data-co-spinner-variant="orbit"] [data-co-spinner-cell] {
+		animation-duration: 1.6s;
+		animation-name: co-spinner-orbit;
+	}
+
+	[data-co-spinner][data-co-spinner-variant="wave"] [data-co-spinner-cell] {
+		animation-duration: 1.75s;
+		animation-name: co-spinner-wave;
+	}
+
+	[data-co-spinner][data-co-spinner-variant="pulse"] [data-co-spinner-cell] {
+		animation-duration: 1.4s;
+		animation-name: co-spinner-pulse;
+	}
+
+	:where(.cossistant, [data-cossistant-root]) {
+		.co-animate-fade-in {
+			animation: co-fade-in 0.3s ease-out both;
+		}
+
+		.co-animate-fade-in-scale {
+			animation: co-fade-in-scale 0.3s ease-out both;
+		}
+
+		.co-animate-slide-up-blur {
+			animation: co-slide-up-blur 0.2s ease-out both;
+		}
+
+		.co-animate-slide-up-fade {
+			animation: co-slide-up-fade 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+		}
+
+		.co-animate-scale-in {
+			animation: co-scale-in 0.2s ease-out both;
+		}
+
+		.co-animate-panel-in {
+			animation: co-panel-in 0.25s cubic-bezier(0, 0.8, 0.2, 1) both;
+		}
+
+		.co-animate-panel-out {
+			animation: co-panel-out 0.15s ease-in both;
+		}
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Reduced motion                                                     */
+	/* ------------------------------------------------------------------ */
+
+	@media (prefers-reduced-motion: reduce) {
+		[data-co-spinner-cell] {
+			animation: none;
+			opacity: 0.65;
+			transform: none;
+		}
+
+		:where(.cossistant, [data-cossistant-root]) {
+			.co-animate-fade-in,
+			.co-animate-fade-in-scale,
+			.co-animate-slide-up-blur,
+			.co-animate-slide-up-fade,
+			.co-animate-scale-in,
+			.co-animate-panel-in,
+			.co-animate-panel-out {
+				animation: none;
+			}
+		}
+	}
+}

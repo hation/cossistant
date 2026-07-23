@@ -1,0 +1,175 @@
+/* Fake Dashboard Container */
+.fake-dashboard-container {
+	width: 100%;
+	height: var(--fake-dashboard-height-mobile);
+}
+
+@media (min-width: 640px) {
+	.fake-dashboard-container {
+		height: var(--fake-dashboard-height-sm);
+	}
+}
+
+@media (min-width: 1024px) {
+	.fake-dashboard-container {
+		height: var(--fake-dashboard-height-md);
+	}
+}
+
+@media (min-width: 1280px) {
+	.fake-dashboard-container {
+		height: var(--fake-dashboard-height-lg);
+	}
+}
+
+@media (min-width: 1536px) {
+	.fake-dashboard-container {
+		height: var(--fake-dashboard-height-xl);
+	}
+}
+
+/* Fake Central Container - responsive height calculation */
+.fake-central-container {
+	height: calc(var(--fake-dashboard-height-mobile) - 4rem);
+}
+
+@media (min-width: 640px) {
+	.fake-central-container {
+		height: calc(var(--fake-dashboard-height-sm) - 4rem);
+	}
+}
+
+@media (min-width: 1024px) {
+	.fake-central-container {
+		height: calc(var(--fake-dashboard-height-md) - 4rem);
+	}
+}
+
+@media (min-width: 1280px) {
+	.fake-central-container {
+		height: calc(var(--fake-dashboard-height-lg) - 4rem);
+	}
+}
+
+@media (min-width: 1536px) {
+	.fake-central-container {
+		height: calc(var(--fake-dashboard-height-xl) - 4rem);
+	}
+}
+
+/* Mobile scaling: render browser + dashboard at 1280x720 and scale down */
+@media (max-width: 767px) {
+	.fake-browser-wrapper {
+		width: 1280px !important;
+		height: 720px !important;
+		transform: scale(0.5) !important;
+		transform-origin: center center !important;
+		max-width: none !important;
+	}
+
+	/* Ensure browser chrome container has full height */
+	.fake-browser-wrapper > div {
+		height: 720px !important;
+		min-height: 720px !important;
+	}
+
+	/* Browser top bar: py-1 (0.5rem) + border (1px ≈ 0.0625rem) + content (~1.75rem) ≈ 2.25rem */
+	/* Browser content area = 720px - browser top bar */
+	/* Dashboard container should fit browser content area */
+	.fake-browser-wrapper .fake-dashboard-container {
+		height: calc(720px - 2.25rem) !important;
+	}
+
+	/* Central container: browser content height - navigation topbar (4rem) - bottom padding (0.5rem) */
+	.fake-browser-wrapper .fake-central-container {
+		height: calc(720px - 2.25rem - 4rem - 0.5rem) !important;
+	}
+}
+
+/* Small tablets: scale down */
+@media (min-width: 768px) and (max-width: 1023px) {
+	.fake-browser-wrapper {
+		width: 1280px !important;
+		height: 720px !important;
+		transform: scale(0.65) !important;
+		transform-origin: center center !important;
+		max-width: none !important;
+	}
+
+	/* Ensure browser chrome container has full height */
+	.fake-browser-wrapper > div {
+		height: 720px !important;
+		min-height: 720px !important;
+	}
+
+	/* Browser top bar: py-1 (0.5rem) + border (1px ≈ 0.0625rem) + content (~1.75rem) ≈ 2.25rem */
+	/* Browser content area = 720px - browser top bar */
+	/* Dashboard container should fit browser content area */
+	.fake-browser-wrapper .fake-dashboard-container {
+		height: calc(720px - 2.25rem) !important;
+	}
+
+	/* Central container: browser content height - navigation topbar (4rem) - bottom padding (0.5rem) */
+	.fake-browser-wrapper .fake-central-container {
+		height: calc(720px - 2.25rem - 4rem - 0.5rem) !important;
+	}
+}
+
+/* Large tablets: scale down slightly */
+@media (min-width: 1024px) and (max-width: 1279px) {
+	.fake-browser-wrapper {
+		width: 1280px !important;
+		height: 720px !important;
+		transform: scale(0.75) !important;
+		transform-origin: center center !important;
+		max-width: none !important;
+	}
+
+	/* Ensure browser chrome container has full height */
+	.fake-browser-wrapper > div {
+		height: 720px !important;
+		min-height: 720px !important;
+	}
+
+	/* Browser top bar: py-1 (0.5rem) + border (1px ≈ 0.0625rem) + content (~1.75rem) ≈ 2.25rem */
+	/* Browser content area = 720px - browser top bar */
+	/* Dashboard container should fit browser content area */
+	.fake-browser-wrapper .fake-dashboard-container {
+		height: calc(720px - 2.25rem) !important;
+	}
+
+	/* Central container: browser content height - navigation topbar (4rem) - bottom padding (0.5rem) */
+	.fake-browser-wrapper .fake-central-container {
+		height: calc(720px - 2.25rem - 4rem - 0.5rem) !important;
+	}
+}
+
+/* Desktop: normal responsive sizing */
+@media (min-width: 1280px) {
+	.fake-browser-wrapper {
+		width: 100% !important;
+		max-width: 1450px !important;
+		height: auto !important;
+		transform: scale(0.9) !important;
+		transform-origin: center !important;
+	}
+}
+
+/* Performance optimizations for animations */
+.fake-central-container {
+	will-change: contents;
+	contain: layout style paint;
+}
+
+/* Optimize scrollable areas */
+.fake-central-container [class*="scroll"] {
+	will-change: scroll-position;
+	contain: strict;
+}
+
+/* Optimize animated items (conversations, messages) */
+.fake-central-container [class*="conversation-item"],
+.fake-central-container [class*="message"] {
+	will-change: transform, opacity;
+	contain: layout style paint;
+}

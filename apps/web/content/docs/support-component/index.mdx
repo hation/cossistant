@@ -1,0 +1,136 @@
+---
+title: Overview
+description: Ship the default Support widget first. Then brand it in small steps.
+search:
+  kind: component
+  tags:
+    - support
+    - widget
+    - quickstart
+  aliases:
+    - <Support />
+    - SupportProvider
+    - SupportConfig
+---
+
+`Support` is the fast path. Ship the widget with good defaults, change the parts users see first, and go deeper only if you need to.
+
+## Use this when
+
+- the widget already renders and you want the quickest path to production
+- you want to know which API to reach for next
+- you want to keep the default shell while you brand a few parts
+
+## 30-second version
+
+```tsx title="src/App.tsx"
+import { Support } from "@cossistant/react";
+
+export default function App() {
+  return <Support />;
+}
+```
+
+<ComponentPreview name="support-doc" />
+
+The default widget gives you three good things right away:
+
+- fast to production
+- easy branding
+- safe partial overrides
+
+## What you can change without rebuilding
+
+- `classNames` and `slotProps` for styling the built-in UI
+- `slots.trigger` to swap the bubble
+- `slots.homePage` to change the first screen
+- `SupportConfig` for route-level welcome messages and quick options
+- `theme` and `--co-theme-*` tokens for colors, radius, and light or dark mode
+
+If that covers your use case, stay here. You do not need the `Advanced` track to ship a polished widget.
+
+## Identifying visitors
+
+Use `IdentifySupportVisitor` when a user signs in. Add `SupportConfig` when a page needs its own support context.
+
+```tsx title="src/App.tsx"
+import {
+  IdentifySupportVisitor,
+  Support,
+  SupportConfig,
+} from "@cossistant/react";
+import { SenderType, type DefaultMessage } from "@cossistant/types";
+
+const defaultMessages: DefaultMessage[] = [
+  {
+    content: "Hi Jane, I can help with billing, onboarding, or migration.",
+    senderType: SenderType.TEAM_MEMBER,
+  },
+];
+
+export default function App() {
+  const user = {
+    id: "user_123",
+    email: "jane@acme.com",
+    name: "Jane Doe",
+  };
+
+  return (
+    <>
+      <IdentifySupportVisitor
+        externalId={user.id}
+        email={user.email}
+        name={user.name}
+      />
+
+      <SupportConfig
+        defaultMessages={defaultMessages}
+        quickOptions={[
+          "How do I set this up?",
+          "Can you help with billing?",
+          "How do I import old conversations?",
+        ]}
+      />
+
+      <Support />
+    </>
+  );
+}
+```
+
+<Alert variant="info" className="mt-6">
+  <Icon name="help" className="size-4" />
+  <AlertTitle>When should I use `SupportConfig`?</AlertTitle>
+  <AlertDescription>
+    Use `SupportConfig` for page-level defaults. Use `slots` when you want to
+    swap UI. Use `Support.Root` when you want your own shell.
+  </AlertDescription>
+</Alert>
+
+## When to stop here
+
+- the default widget already fits your product
+- you only need identity, welcome messages, quick options, or prop-level styling
+- you do not need custom pages or a custom shell
+
+## Next step
+
+1. [Change One Thing](/docs/support-component/customization) to swap the bubble or first screen without rebuilding the widget.
+2. [Match Your Brand](/docs/support-component/theme) to set colors, radius, and dark mode.
+3. [Pages & Layouts](/docs/support-component/routing) when you need an inline embed, a custom page, or a custom shell.
+
+## Want to build your own?
+
+That is a separate track now.
+
+Use [Advanced](/docs/advanced) when you want to go fully custom. The shipped widget is built from reusable logic and primitives, and you can inspect the [support source](https://github.com/cossistantcom/cossistant/tree/main/packages/react/src/support) if you want a real starting point today.
+
+We are also working on templates with full examples for common custom builds.
+
+## Support Props
+
+<auto-type-table
+  path="packages/react/src/support/index.tsx"
+  name="SupportPropsReference"
+  type="Pick<SupportProps, 'className' | 'mode' | 'side' | 'align' | 'sideOffset' | 'avoidCollisions' | 'collisionPadding' | 'classNames' | 'theme' | 'open' | 'onOpenChange' | 'defaultOpen' | 'quickOptions' | 'defaultMessages' | 'locale' | 'content' | 'customPages' | 'slots' | 'slotProps' | 'children'>"
+/>

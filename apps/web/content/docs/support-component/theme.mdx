@@ -1,0 +1,202 @@
+---
+title: Match Your Brand
+description: Brand the Support widget with CSS variables, the theme prop, and your app tokens.
+search:
+  kind: guide
+  tags:
+    - theme
+    - css-variables
+    - design-tokens
+  aliases:
+    - --co-theme-primary
+    - --co-theme-background
+    - --co-theme-foreground
+    - --co-theme-radius
+---
+
+export function ColorSwatch({ value, label = value }) {
+  return (
+    <span
+      aria-label={label}
+      className="inline-block size-4 border border-dashed border-border align-middle"
+      style={{ background: value }}
+      title={label}
+    />
+  );
+}
+
+You can make the widget feel like part of your product without replacing any components.
+
+## Use this when
+
+- the default widget shape is good and you mainly need branding
+- you want a copy-paste way to set colors and radius
+- you want the widget to follow your app theme or force dark mode
+
+## Pick the simplest path
+
+In many Tailwind + shadcn apps, the widget already feels native after you import the CSS entrypoint. Start with the smallest option that matches what you need.
+
+<ThemeScenarios />
+
+## Theme precedence
+
+The widget resolves theme values in this order:
+
+1. Explicit `--co-theme-*` overrides you set on `.cossistant`
+2. Host shadcn-style tokens like `--background`, `--primary`, `--radius`, and `--font-sans`
+3. Built-in Cossistant defaults
+
+That means the widget will already feel closer to your app in many setups before you write any extra theme CSS.
+
+<StyleTokenCascade />
+
+## Do nothing in many shadcn apps
+
+If your app already exposes the usual shadcn-style tokens on `:root` and `.dark`, the widget picks them up automatically. No extra theme mapping is needed to start.
+
+Render `<Support />`, import either `support.css` or `styles.css`, and see how far the automatic host theme gets you before you add overrides.
+
+## What gets inherited automatically
+
+The default widget looks for these host tokens today:
+
+- `--background`
+- `--foreground`
+- `--popover`
+- `--popover-foreground`
+- `--primary`
+- `--primary-foreground`
+- `--secondary`
+- `--secondary-foreground`
+- `--muted`
+- `--muted-foreground`
+- `--accent`
+- `--accent-foreground`
+- `--border`
+- `--input`
+- `--ring`
+- `--destructive`
+- `--destructive-foreground`
+- `--radius`
+- `--font-sans`
+- `--font-mono`
+
+Dark mode follows your app automatically too. The widget checks for `.dark` on an ancestor or `data-color-scheme="dark"` on the widget root.
+
+This automatic adoption is intentionally scoped to standard shadcn-style base tokens:
+
+- colors
+- radius
+- fonts
+- dark mode
+
+## Pin widget values
+
+Set the widget tokens once and keep the default UI.
+
+```css title="src/index.css"
+.cossistant {
+  --co-theme-primary: #111827;
+  --co-theme-primary-foreground: #ffffff;
+  --co-theme-background: #ffffff;
+  --co-theme-foreground: #111827;
+  --co-theme-border: #e5e7eb;
+  --co-theme-radius: 0px;
+}
+```
+
+That is usually enough when you want to pin the widget to your own values instead of relying on the host tokens.
+
+## Force dark mode
+
+```tsx
+import { Support } from "@cossistant/react";
+
+<Support theme="dark" />;
+```
+
+By default, the widget follows your app theme. Use `theme="dark"` when the widget should stay dark instead of following the page theme.
+
+## Pin the widget to your shadcn tokens
+
+This is still useful when you want the widget theme to stay explicitly linked to your app tokens, even if you later rename or swap the host token source.
+
+```css
+:root {
+  --co-theme-background: var(--background);
+  --co-theme-foreground: var(--foreground);
+  --co-theme-primary: var(--primary);
+  --co-theme-primary-foreground: var(--primary-foreground);
+  --co-theme-border: var(--border);
+  --co-theme-radius: var(--radius);
+}
+```
+
+## What is not inherited automatically
+
+The widget inherits CSS design tokens, radius, fonts, and dark mode. It does not inherit arbitrary compile-time Tailwind config such as:
+
+- custom spacing scales
+- custom shadow scales
+- custom plugin utilities
+- unrelated utility renames or variants
+
+If your app uses custom token names outside the standard shadcn-style base tokens, map them explicitly into `--co-theme-*`.
+
+## When to stop here
+
+- colors, radius, and dark mode are enough
+- you want the default layout to stay in place
+- you do not need custom pages or a custom shell
+
+## Next step
+
+- [Pages & Layouts](/docs/support-component/routing) when you need a different first screen, an inline embed, or your own shell
+- [Copy & Locale](/docs/support-component/text) when the next change is wording instead of UI
+
+## Core token reference
+
+| Variable                        | Light preview                                             | Default (Light)    | Dark preview                                              | Default (Dark)     |
+| ------------------------------- | --------------------------------------------------------- | ------------------ | --------------------------------------------------------- | ------------------ |
+| `--co-theme-background`         | <ColorSwatch value="oklch(99% 0 0)" />                   | `oklch(99% 0 0)`   | <ColorSwatch value="oklch(15.5% 0 0)" />                 | `oklch(15.5% 0 0)` |
+| `--co-theme-foreground`         | <ColorSwatch value="oklch(20.5% 0 0)" />                 | `oklch(20.5% 0 0)` | <ColorSwatch value="oklch(95% 0 0)" />                   | `oklch(95% 0 0)`   |
+| `--co-theme-primary`            | <ColorSwatch value="oklch(14.5% 0 0)" />                 | `oklch(14.5% 0 0)` | <ColorSwatch value="oklch(98.5% 0 0)" />                 | `oklch(98.5% 0 0)` |
+| `--co-theme-primary-foreground` | <ColorSwatch value="oklch(98.5% 0 0)" />                 | `oklch(98.5% 0 0)` | <ColorSwatch value="oklch(14.5% 0 0)" />                 | `oklch(14.5% 0 0)` |
+| `--co-theme-border`             | <ColorSwatch value="oklch(92.2% 0 0)" />                 | `oklch(92.2% 0 0)` | <ColorSwatch value="oklch(26.9% 0 0)" />                 | `oklch(26.9% 0 0)` |
+| `--co-theme-muted`              | <ColorSwatch value="color-mix(in oklch, oklch(99% 0 0) 85%, oklch(20.5% 0 0))" /> | Color-mixed        | <ColorSwatch value="color-mix(in oklch, oklch(15.5% 0 0) 55%, oklch(95% 0 0))" /> | Color-mixed        |
+| `--co-theme-muted-foreground`   | <ColorSwatch value="color-mix(in oklch, oklch(20.5% 0 0) 70%, white)" /> | Color-mixed        | <ColorSwatch value="color-mix(in oklch, oklch(95% 0 0) 65%, white)" /> | Color-mixed        |
+| `--co-theme-radius`             | -                                                         | `0.375rem`         | -                                                         | `0.375rem`         |
+
+## Extra tokens
+
+Use these when the core tokens are not enough:
+
+### Status colors
+
+| Variable                 | Light preview                              | Default (Light)          | Dark preview                               | Default (Dark)            |
+| ------------------------ | ------------------------------------------ | ------------------------ | ------------------------------------------ | ------------------------- |
+| `--co-theme-destructive` | <ColorSwatch value="oklch(57.7% 0.245 27.325)" /> | `oklch(57.7% 0.245 27.325)` | <ColorSwatch value="oklch(39.6% 0.141 25.723)" /> | `oklch(39.6% 0.141 25.723)` |
+| `--co-theme-success`     | <ColorSwatch value="oklch(71.7% 0.18 142)" /> | `oklch(71.7% 0.18 142)` | <ColorSwatch value="oklch(60% 0.15 142)" /> | `oklch(60% 0.15 142)`     |
+| `--co-theme-warning`     | <ColorSwatch value="oklch(86.4% 0.144 99)" /> | `oklch(86.4% 0.144 99)` | <ColorSwatch value="oklch(90.3% 0.111 99)" /> | `oklch(90.3% 0.111 99)`   |
+| `--co-theme-neutral`     | <ColorSwatch value="oklch(60.8% 0 0)" />  | `oklch(60.8% 0 0)`      | <ColorSwatch value="oklch(50% 0 0)" />     | `oklch(50% 0 0)`          |
+
+### Avatar accents
+
+| Variable            | Light preview                             | Default (Light)        | Dark preview                              | Default (Dark)         |
+| ------------------- | ----------------------------------------- | ---------------------- | ----------------------------------------- | ---------------------- |
+| `--co-theme-pink`   | <ColorSwatch value="oklch(76.3% 0.152 354)" /> | `oklch(76.3% 0.152 354)` | <ColorSwatch value="oklch(84.2% 0.109 354)" /> | `oklch(84.2% 0.109 354)` |
+| `--co-theme-yellow` | <ColorSwatch value="oklch(86.4% 0.144 99)" /> | `oklch(86.4% 0.144 99)` | <ColorSwatch value="oklch(90.3% 0.111 99)" /> | `oklch(90.3% 0.111 99)` |
+| `--co-theme-blue`   | <ColorSwatch value="oklch(72.5% 0.132 241)" /> | `oklch(72.5% 0.132 241)` | <ColorSwatch value="oklch(79.8% 0.089 241)" /> | `oklch(79.8% 0.089 241)` |
+| `--co-theme-orange` | <ColorSwatch value="oklch(74.5% 0.166 50)" /> | `oklch(74.5% 0.166 50)` | <ColorSwatch value="oklch(68.2% 0.194 50)" /> | `oklch(68.2% 0.194 50)` |
+
+### Background shades
+
+| Variable                    | Light preview | Default (Light) | Dark preview | Default (Dark) |
+| --------------------------- | ------------- | --------------- | ------------ | -------------- |
+| `--co-theme-background-50`  | <ColorSwatch value="color-mix(in oklch, oklch(99% 0 0) 98%, oklch(20.5% 0 0))" /> | Color-mixed | <ColorSwatch value="color-mix(in oklch, oklch(15.5% 0 0) 98%, oklch(95% 0 0))" /> | Color-mixed |
+| `--co-theme-background-100` | <ColorSwatch value="color-mix(in oklch, oklch(99% 0 0) 97%, oklch(20.5% 0 0))" /> | Color-mixed | <ColorSwatch value="color-mix(in oklch, oklch(15.5% 0 0) 96%, oklch(95% 0 0))" /> | Color-mixed |
+| `--co-theme-background-200` | <ColorSwatch value="color-mix(in oklch, oklch(99% 0 0) 96%, oklch(20.5% 0 0))" /> | Color-mixed | <ColorSwatch value="color-mix(in oklch, oklch(15.5% 0 0) 94%, oklch(95% 0 0))" /> | Color-mixed |
+| `--co-theme-background-300` | <ColorSwatch value="color-mix(in oklch, oklch(99% 0 0) 95%, oklch(20.5% 0 0))" /> | Color-mixed | <ColorSwatch value="color-mix(in oklch, oklch(15.5% 0 0) 92%, oklch(95% 0 0))" /> | Color-mixed |
+
+The background shades are derived from your base colors with `color-mix()` unless you override them directly.

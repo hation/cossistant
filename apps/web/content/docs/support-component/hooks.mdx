@@ -1,0 +1,605 @@
+---
+title: Hooks Reference
+description: Programmatic access to Support widget state, navigation, visitor identity, and custom page behavior.
+search:
+  kind: hook
+  tags:
+    - react-hooks
+    - state
+    - navigation
+    - types
+  aliases:
+    - useSupport
+    - useVisitor
+    - useSupportConfig
+    - useSupportNavigation
+    - useHomePage
+    - useConversationPage
+---
+
+## Use this page when
+
+Reach for hooks when prop-level customization is not enough.
+
+- open or close the widget from your own UI
+- read or change navigation state
+- identify visitors or sync contact metadata in code
+- build custom pages on top of the Support runtime
+
+If you are still shaping the widget, start with [Overview](/docs/support-component), [Change One Thing](/docs/support-component/customization), or [Pages & Layouts](/docs/support-component/routing).
+
+## Hook families
+
+- `useSupport` and `useSupportConfig` for widget state
+- `useSupportNavigation` and page hooks for route-aware UI
+- `useVisitor` for identity and contact metadata
+- conversation hooks for custom pages, drafts, typing, uploads, and send flows
+
+Provider-optional mutation hooks accept `options.client`. Omitting `client`
+uses the nearest `SupportProvider`; passing an explicit client lets the hook run
+outside the widget runtime. Passing `client: null` intentionally disables the
+provider fallback. This applies to `useSubmitFeedback`, `useSendMessage`,
+`useCreateConversation`, and `useFileUpload`.
+
+## useSupport
+
+Access support widget state and controls from any client component.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/custom-support-button.tsx"
+"use client";
+
+import { useSupport } from "@cossistant/react";
+
+export function CustomSupportButton() {
+  const { isOpen, toggle, unreadCount } = useSupport();
+
+  return (
+    <button
+      onClick={toggle}
+      className="relative border border-primary bg-primary px-4 py-2 text-white"
+    >
+      Support
+      {unreadCount > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center bg-red-500 text-xs">
+          {unreadCount}
+        </span>
+      )}
+    </button>
+  );
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/provider.tsx"
+  name="UseSupportValue"
+  variant="return"
+/>
+
+## useVisitor
+
+Programmatically identify visitors and manage contact metadata.
+
+<Alert variant="info" className="mt-6 mb-6">
+  <Icon name="info" className="size-4" />
+  <AlertTitle>Important: Metadata storage</AlertTitle>
+  <AlertDescription>
+    Metadata is stored on **contacts**, not visitors. You must call `identify()`
+    before `setVisitorMetadata()` will work. Learn more about{" "}
+    <Link href="/docs/concepts">visitors</Link> and{" "}
+    <Link href="/docs/concepts/contacts">contacts</Link>.
+  </AlertDescription>
+</Alert>
+
+### Example: Identify on Auth
+
+```tsx showLineNumbers title="components/auth-handler.tsx"
+"use client";
+
+import { useVisitor } from "@cossistant/react";
+import { useEffect } from "react";
+
+export function AuthHandler({ user }) {
+  const { visitor, identify } = useVisitor();
+
+  useEffect(() => {
+    // Only identify if we have a user and visitor isn't already a contact
+    if (user && !visitor?.contact) {
+      identify({
+        externalId: user.id,
+        email: user.email,
+        name: user.name,
+        image: user.avatar,
+      });
+    }
+  }, [user, visitor?.contact, identify]);
+
+  return null;
+}
+```
+
+### Example: Update Metadata on Action
+
+```tsx showLineNumbers title="components/upgrade-button.tsx"
+"use client";
+
+import { useVisitor } from "@cossistant/react";
+
+export function UpgradeButton() {
+  const { setVisitorMetadata } = useVisitor();
+
+  const handleUpgrade = async () => {
+    // Upgrade user's plan
+    await upgradeToPro();
+
+    // Update contact metadata so support agents see the change
+    await setVisitorMetadata({
+      plan: "pro",
+      upgradedAt: new Date().toISOString(),
+      mrr: 99,
+    });
+  };
+
+  return <button onClick={handleUpgrade}>Upgrade to Pro</button>;
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/hooks/use-visitor.ts"
+  name="UseVisitorReturn"
+  variant="return"
+/>
+
+### identify() Parameters
+
+<auto-type-table
+  path="packages/react/src/hooks/use-visitor.ts"
+  name="IdentifyParams"
+  variant="parameter"
+/>
+
+<Alert variant="default" className="mt-6">
+  <Icon name="lightbulb" className="size-4" />
+  <AlertTitle>Prefer declarative code?</AlertTitle>
+  <AlertDescription>
+    Use the{" "}
+    <Link
+      href="/docs/support-component#identifying-visitors"
+      className="inline-block"
+    >
+      IdentifySupportVisitor
+    </Link>{" "}
+    component for a simpler, declarative approach to visitor identification in
+    Server Components.
+  </AlertDescription>
+</Alert>
+
+## useSupportConfig
+
+Access and control widget visibility and size configuration.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/custom-toggle.tsx"
+"use client";
+
+import { useSupportConfig } from "@cossistant/react";
+
+export function CustomToggle() {
+  const { isOpen, open, close, toggle, size } = useSupportConfig();
+
+  return (
+    <div className="flex gap-2">
+      <button onClick={toggle}>
+        {isOpen ? "Close Support" : "Open Support"}
+      </button>
+      <span>Size: {size}</span>
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/support/store/support-store.ts"
+  name="UseSupportConfigResult"
+  variant="return"
+/>
+
+<Alert variant="info" className="mt-6">
+  <Icon name="info" className="size-4" />
+  <AlertTitle>Controlled mode support</AlertTitle>
+  <AlertDescription>
+    When using controlled mode (`open` and `onOpenChange` props on Support), these functions
+    will call `onOpenChange` instead of modifying internal state.
+  </AlertDescription>
+</Alert>
+
+## useSupportNavigation
+
+Access navigation state and routing methods for the widget.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/navigation-buttons.tsx"
+"use client";
+
+import { useSupportNavigation } from "@cossistant/react";
+
+export function NavigationButtons() {
+  const { page, navigate, goBack, canGoBack } = useSupportNavigation();
+
+  return (
+    <div className="flex gap-2">
+      {canGoBack && <button onClick={goBack}>← Back</button>}
+      <span>Current page: {page}</span>
+      <button onClick={() => navigate({ page: "HOME" })}>Go Home</button>
+      <button
+        onClick={() =>
+          navigate({
+            page: "CONVERSATION",
+            params: { conversationId: "conv_123" }
+          })
+        }
+      >
+        Open Conversation
+      </button>
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/support/store/support-store.ts"
+  name="UseSupportNavigationResult"
+  variant="return"
+/>
+
+## useSupportHandle
+
+Access the imperative handle from within the widget tree. Alternative to using refs on the Support component. The hook returns `null` outside the widget tree, and the table below describes the handle when it is available.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/help-button.tsx"
+"use client";
+
+import { useSupportHandle } from "@cossistant/react";
+
+export function HelpButton() {
+  const support = useSupportHandle();
+
+  const handleNeedHelp = () => {
+    // Open support and start a new conversation
+    support?.startConversation("I need help with my order");
+  };
+
+  return (
+    <button onClick={handleNeedHelp}>
+      Need Help?
+    </button>
+  );
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/support/context/handle.tsx"
+  name="SupportHandle"
+  variant="return"
+/>
+
+## useHomePage
+
+Logic hook for building custom home pages. Provides all state and actions needed for the home page.
+
+### Basic Example
+
+```tsx showLineNumbers title="pages/custom-home.tsx"
+"use client";
+
+import { useHomePage } from "@cossistant/react";
+
+export function CustomHomePage() {
+  const home = useHomePage({
+    onStartConversation: () => console.log("Conversation started"),
+    onOpenConversation: (id) => console.log("Opened:", id),
+  });
+
+  return (
+    <div>
+      <h1>Welcome!</h1>
+
+      {home.lastOpenConversation && (
+        <button onClick={() => home.openConversation(home.lastOpenConversation!.id)}>
+          Continue conversation
+        </button>
+      )}
+
+      <button onClick={() => home.startConversation()}>
+        Start new conversation
+      </button>
+
+      {home.availableConversationsCount > 0 && (
+        <button onClick={home.openConversationHistory}>
+          View {home.availableConversationsCount} conversations
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/hooks/use-home-page.ts"
+  name="UseHomePageReturn"
+  variant="return"
+/>
+
+## useConversationPage
+
+Logic hook for building custom conversation pages. Manages the conversation lifecycle, messages, and composer.
+
+### Basic Example
+
+```tsx showLineNumbers title="pages/custom-conversation.tsx"
+"use client";
+
+import { useConversationPage } from "@cossistant/react";
+
+export function CustomConversationPage({ conversationId }: { conversationId: string }) {
+  const conversation = useConversationPage({
+    conversationId,
+    onConversationIdChange: (id) => console.log("Active:", id),
+  });
+
+  return (
+    <div>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto">
+        {conversation.items.map((item) => (
+          <div key={item.id}>{/* Render message */}</div>
+        ))}
+      </div>
+
+      {/* Composer */}
+      <form onSubmit={(e) => { e.preventDefault(); conversation.composer.submit(); }}>
+        <input
+          value={conversation.composer.message}
+          onChange={(e) => conversation.composer.setMessage(e.target.value)}
+          placeholder={conversation.isPending ? "Start the conversation..." : "Type a message..."}
+        />
+        <button
+          type="submit"
+          disabled={!conversation.composer.canSubmit || conversation.composer.isSubmitting}
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/hooks/use-conversation-page.ts"
+  name="UseConversationPageReturn"
+  variant="return"
+/>
+
+## useMessageComposer
+
+Hook for managing message composition with file attachments.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/message-input.tsx"
+"use client";
+
+import { useMessageComposer } from "@cossistant/react";
+
+export function MessageInput({ conversationId }: { conversationId: string }) {
+  const composer = useMessageComposer({
+    conversationId,
+    onMessageSent: () => console.log("Message sent!"),
+  });
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); composer.submit(); }}>
+      <input
+        value={composer.message}
+        onChange={(e) => composer.setMessage(e.target.value)}
+        placeholder="Type a message..."
+      />
+      <input
+        type="file"
+        multiple
+        onChange={(e) => {
+          if (e.target.files) {
+            composer.addFiles(Array.from(e.target.files));
+          }
+        }}
+      />
+      {composer.files.map((file, index) => (
+        <span key={file.name}>
+          {file.name}{" "}
+          <button type="button" onClick={() => composer.removeFile(index)}>
+            ×
+          </button>
+        </span>
+      ))}
+      <button type="submit" disabled={!composer.canSubmit || composer.isSubmitting}>
+        {composer.isSubmitting ? "Sending..." : "Send"}
+      </button>
+    </form>
+  );
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/hooks/use-message-composer.ts"
+  name="UseMessageComposerReturn"
+  variant="return"
+/>
+
+## useFileUpload
+
+Hook for handling file uploads with progress tracking. It can use the client
+from `SupportProvider`, or an explicit client for provider-free flows.
+If you import `CossistantClient` directly, install `@cossistant/core` in your
+app.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/file-uploader.tsx"
+"use client";
+
+import { CossistantClient } from "@cossistant/core";
+import { useFileUpload } from "@cossistant/react/hooks/use-file-upload";
+
+const client = new CossistantClient({ publicKey: "pk_test_xxxx" });
+
+export function FileUploader() {
+  const upload = useFileUpload({ client });
+  const conversationId = "conv_123";
+
+  return (
+    <div>
+      <input
+        type="file"
+        multiple
+        onChange={async (e) => {
+          if (e.target.files?.length) {
+            await upload.uploadFiles(Array.from(e.target.files), conversationId);
+          }
+        }}
+      />
+      {upload.isUploading && (
+        <div>
+          <progress value={upload.progress} max={100} />
+          <span>{upload.progress}%</span>
+        </div>
+      )}
+      {upload.error && <p className="text-red-500">{upload.error.message}</p>}
+    </div>
+  );
+}
+```
+
+Inside a `SupportProvider`, you can call `useFileUpload()` without options and
+it will use the provider client.
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/hooks/use-file-upload.ts"
+  name="UseFileUploadReturn"
+  variant="return"
+/>
+
+## useSupportText
+
+Access the localization system for the support widget.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/localized-button.tsx"
+"use client";
+
+import { useSupportText } from "@cossistant/react";
+
+export function LocalizedButton() {
+  const format = useSupportText();
+
+  return (
+    <button>
+      {format("common.actions.askQuestion")}
+    </button>
+  );
+}
+```
+
+### Returned Formatter
+
+`useSupportText()` returns a formatter function. The table below documents that
+function reference.
+
+<auto-type-table
+  path="packages/react/src/support/text/locales/keys.ts"
+  name="UseSupportTextReturn"
+  variant="return"
+/>
+
+## useSupportEvents
+
+Access the events context for subscribing to widget lifecycle events. The hook returns `null` when used outside the widget's event provider, and the table below documents the event context when present.
+
+### Basic Example
+
+```tsx showLineNumbers title="components/analytics-tracker.tsx"
+"use client";
+
+import { useSupportEvents } from "@cossistant/react";
+import { useEffect } from "react";
+
+export function AnalyticsTracker() {
+  const events = useSupportEvents();
+
+  useEffect(() => {
+    if (!events) return;
+
+    const unsubscribe = events.subscribe("messageSent", (event) => {
+      // Track in your analytics
+      analytics.track("support_message_sent", {
+        conversationId: event.conversationId,
+      });
+    });
+
+    return unsubscribe;
+  }, [events]);
+
+  return null;
+}
+```
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/support/context/events.tsx"
+  name="SupportEventsContextValue"
+  variant="return"
+/>
+
+## useSupportEventEmitter
+
+Convenience hook for emitting events from within the widget.
+
+### Return Values
+
+<auto-type-table
+  path="packages/react/src/support/context/events.tsx"
+  name="UseSupportEventEmitterResult"
+  variant="return"
+/>
+
+## Types
+
+Shared support hook and data-model types now live on the
+[Types](/docs/support-component/types) page. Use it for `PublicVisitor`,
+`PublicWebsiteResponse`, `CossistantClient`, `TimelineItem`, `Conversation`,
+and the rest of the canonical support type reference.

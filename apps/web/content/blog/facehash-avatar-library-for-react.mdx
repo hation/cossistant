@@ -1,0 +1,171 @@
+---
+title: "Avatars component for React that doesn't suck: Introducing Facehash"
+description: "Facehash is an open-source React avatar component that generates unique faces from any string. Zero dependencies, works with Next.js, Vite, and Remix."
+date: "2026-01-30"
+author: "Anthony Riera"
+tags: ["open-source", "react", "nextjs", "design", "avatar"]
+image: "https://cdn.cossistant.com/blog/facehash-avatar-library-for-react.jpg"
+top: true
+related: []
+published: true
+---
+
+You spent weeks polishing your SaaS. The landing page looks incredible. The dashboard is clean. Everything feels _premium_.
+
+Then users sign up.
+
+And they don't upload profile pictures.
+
+Suddenly your beautiful app is littered with empty circles, placeholder initials, and that default gray avatar you grabbed from some icon pack at 2am. Your product goes from "polished startup" to "weekend hackathon project" in one onboarding flow.
+
+Sound familiar?
+
+## The default avatar problem in React apps
+
+Here's a stat that won't surprise you: most users never upload a profile picture. They just don't. You can add a friendly reminder, a nudge during onboarding, even a popup that says "hey, upload a photo!" - they'll close it faster than a cookie consent banner.
+
+The result? A comments section that looks like a witness protection program. A team page where everyone is a gray blob. A chat interface that screams "we didn't think this through."
+
+And yet, avatars matter more than you think. They create visual hierarchy. They help users scan conversations. They make your app feel alive and populated rather than empty and abandoned.
+
+## Common avatar fallback solutions (and why they fail)
+
+**Gravatar?** Great concept, limited adoption. Most of your users don't have one.
+
+**Random placeholder images?** Confusing. "Wait, is that the same person who commented earlier?"
+
+**Just initials?** Better, but you end up with a sea of colored circles that all look the same. Three users named "Alex" become visually indistinguishable.
+
+**Forcing uploads?** Sure, if you want to tank your conversion rate.
+
+## Facehash: a React avatar component that generates unique faces
+
+[Facehash](https://www.facehash.dev) is an open-source React library that generates unique, friendly avatar faces from any string input.
+
+The idea is simple: **same input = same face, always**. User "alex.chen@company.com" will always get the same avatar, whether they're on their phone, laptop, or that weird tablet they bought on impulse. No database storage. No API calls. No CDN. Just deterministic avatar generation that runs entirely in the browser.
+
+```tsx
+import { Facehash } from "facehash";
+
+export function UserProfile({ user }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Facehash name={user.email} size={48} />
+      <span>{user.name}</span>
+    </div>
+  );
+}
+```
+
+That's it. No configuration. No API keys. No "sign up for our avatar service." Just install and use.
+
+## Works with Next.js, Vite, and Remix
+
+Facehash plays nice with the modern React ecosystem:
+
+- **Next.js** (App Router and Pages Router)
+- **Vite**
+- **Remix**
+- **Any React setup, really**
+
+It's also zero-dependency and fully typed with TypeScript. The entire thing is CSS-based, which means no external assets to load, no fonts to embed, no images to serve. Your bundle stays lean.
+
+## Using Facehash with shadcn/ui Avatar
+
+If you're using shadcn/ui (or Radix), you probably want avatars that try to load a user's actual photo first, then fall back gracefully. Facehash does exactly this:
+
+```tsx
+import { Avatar, AvatarImage, AvatarFallback } from "facehash";
+
+export function SmartAvatar({ user }) {
+  return (
+    <Avatar>
+      <AvatarImage src={user.avatarUrl} alt={user.name} />
+      <AvatarFallback name={user.email} />
+    </Avatar>
+  );
+}
+```
+
+If the image loads, great. If it doesn't (or the user never uploaded one), Facehash kicks in with a unique generated face. No more broken images. No more empty circles.
+
+## Customizing your avatar component
+
+Facehash is customizable without being overwhelming. You control what matters:
+
+```tsx
+// Different sizes
+<Facehash name="user-123" size={32} />
+<Facehash name="user-123" size={64} />
+
+// Different shapes
+<Facehash name="user-123" shape="round" />
+<Facehash name="user-123" shape="squircle" />
+<Facehash name="user-123" shape="square" />
+
+// Custom colors to match your brand
+<Facehash
+  name="user-123"
+  colors={["#FF6B6B", "#4ECDC4", "#45B7D1"]}
+/>
+
+// 3D effects for extra flair
+<Facehash name="user-123" intensity3d="dramatic" />
+
+// Show the user's initial
+<Facehash name="anthony" showInitial />
+```
+
+## Real-world usage
+
+We use Facehash in [Cossistant](https://cossistant.com), our open-source support widget. It shows up everywhere - in conversation lists, message threads, the dashboard. Both human agents and AI agents get their own deterministic faces.
+
+It's one of those details users don't consciously notice, but they'd definitely notice if it was missing. The whole app just feels more finished.
+
+## Install Facehash in your React project
+
+<Steps className="mt-10">
+  <Step>
+    Install the package
+
+    ```bash
+    npm install facehash
+    ```
+
+  </Step>
+
+  <Step>
+    Import and use
+
+    ```tsx
+    import { Facehash } from "facehash";
+
+    function App() {
+      return <Facehash name="your-user-id" size={48} />;
+    }
+    ```
+
+  </Step>
+
+  <Step>
+    That's it
+
+    No configuration needed. No API keys. Just avatars.
+
+  </Step>
+</Steps>
+
+## Why we made this avatar library open-source
+
+Honestly? Because this problem is too annoying to solve repeatedly. Every app needs avatars. Every developer goes through the same "what do I do when users don't upload photos" dance.
+
+We packaged up our solution and put it out there. Use it however you want. Contribute if you're feeling generous.
+
+Check out the [documentation](https://www.facehash.dev) or grab the code on our [Monorepo](https://github.com/cossistantcom/cossistant).
+
+Your app deserves better than empty circles =).
+
+<SignUpCTA
+  title="Building a SaaS with React? We've got something for you."
+  description="Cossistant is an open-source support widget that works with Facehash out of the box. Add chat support to your app in minutes."
+/>

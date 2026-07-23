@@ -1,0 +1,24 @@
+{
+  "extends": "../typescript-config/base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "es2022",
+    "lib": ["es2022"],
+    "strict": true,
+    "noEmit": false,
+    "declaration": true,
+    "declarationDir": "./dist",
+    "emitDeclarationOnly": true,
+    "baseUrl": "./",
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@cossistant/memory": ["./src"],
+      "@cossistant/memory/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*", "examples/**/*.ts"],
+  "exclude": ["**/.*/", "**/node_modules", "dist", "*.config.*", "**/*.test.ts"]
+}

@@ -1,0 +1,49 @@
+{
+  "name": "@cossistant/types",
+  "type": "module",
+  "version": "0.2.0",
+  "private": false,
+  "author": "Cossistant Team",
+  "description": "Shared TypeScript types for Cossistant packages",
+  "keywords": [
+    "types",
+    "typescript",
+    "shared",
+    "api"
+  ],
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./api": "./src/api/index.ts",
+    "./api/*": "./src/api/*.ts",
+    "./trpc/*": "./src/trpc/*.ts",
+    "./enums": "./src/enums.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*"
+  },
+  "dependencies": {
+    "zod": "^4.1.8",
+    "@hono/zod-openapi": "^1.1.0"
+  },
+  "scripts": {
+    "build": "tsdown && bun run prepare-package",
+    "prepare-package": "bun ../../scripts/prepare-package.ts",
+    "pub:release": "bun run build && npm publish --access public",
+    "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
+    "pub:next": "bun run build && npm publish --access public --tag next --no-git-checks",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
+  }
+}

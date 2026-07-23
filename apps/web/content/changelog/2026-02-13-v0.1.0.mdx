@@ -1,0 +1,62 @@
+---
+version: "0.1.0"
+description: "AI-powered setup, smarter agents, and critical fixes for conversation creation"
+tiny-excerpt: "AI-powered setup, smarter agents"
+date: "2026-02-13"
+author: "Cossistant Team"
+---
+
+Major improvements to AI agent intelligence, simplified Next.js integration, and critical bug fixes for conversation handling.
+
+### Highlights
+
+- <HighlightLine variant="new">
+    **AI-powered setup**: Install Cossistant by copying a prompt and letting
+    your AI handle the configuration.
+  </HighlightLine>
+- <HighlightLine variant="updated">
+    **Simplified Next.js integration**: No longer requires separate React
+    library installation, only Next.js is needed.
+  </HighlightLine>
+- <HighlightLine variant="fixed">
+    **Conversation creation reliability**: Fixed race condition causing 404
+    errors when sending first message.
+  </HighlightLine>
+
+### Support Widget
+
+- <HighlightLine variant="updated">
+    **Improved UI design**: Better brand alignment and visual consistency across
+    components.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **Smarter AI decisions**: Agents now use a dedicated decision step to
+    determine when to engage in conversations.
+  </HighlightLine>
+- <HighlightLine variant="new">
+    **Automatic model fallback**: Fast, cheap models handle decisions with
+    automatic fallback to better models if needed.
+  </HighlightLine>
+
+### Bug Fixes & Improvements
+
+- <HighlightLine variant="fixed">
+    **404 error on new conversations**: Resolved race condition between
+    conversation creation and first message.
+  </HighlightLine>
+- <HighlightLine variant="fixed">
+    **Better Vite support**: Fixed browser runtime compatibility by guarding
+    environment variable access, preventing `process is not defined` errors.
+  </HighlightLine>
+- <HighlightLine variant="fixed">
+    **Re-rendering issues**: Fixed unnecessary re-renders in main React
+    provider.
+  </HighlightLine>
+- <HighlightLine variant="updated">
+    **Timeline improvements**: Enhanced timeline component functionality and
+    display.
+  </HighlightLine>
+
+### Upgrade
+
+<FrameworkInstallCommandTabs version="0.1.0" />

@@ -1,0 +1,2 @@
+ALTER TABLE "conversation" ADD COLUMN "ai_agent_last_processed_message_id" varchar(26);--> statement-breakpoint
+ALTER TABLE "conversation" ADD COLUMN "ai_agent_last_processed_message_created_at" timestamp;

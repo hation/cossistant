@@ -1,0 +1,55 @@
+---
+title: Third-Party Services
+description: Security, compliance, and third-party infrastructure used by Cossistant.
+---
+
+## Overview
+
+Cossistant leverages best-in-class third-party services to deliver a secure, reliable, and performant customer support platform. We are committed to achieving SOC 2 Type II certification as soon as possible and have carefully selected service providers that maintain the highest security and compliance standards.
+
+<Callout type="info">
+  This page describes the managed Cossistant Cloud stack. If you are running
+  Cossistant on your own infrastructure, use the
+  [Self-Host overview](/docs/self-host) for the storage and email setup paths,
+  including the AWS-first infrastructure route and the choice between Resend
+  and SES for email transport.
+</Callout>
+
+## Infrastructure & Hosting
+
+- **[Vercel](https://vercel.com)** - Hosts our Next.js web application and provides edge infrastructure for optimal performance worldwide.
+- **[Railway](https://railway.com)** - Hosts our Hono backend API, Redis instance, and provides automatic deployments with monitoring.
+- **[AWS S3](https://aws.amazon.com/s3/)** - Secure cloud storage for file uploads and media assets (SOC 2 Type II certified).
+- **[AWS CloudFront](https://aws.amazon.com/cloudfront/)** - Content delivery network (CDN) for fast, global content distribution (SOC 2 Type II certified).
+- **[Upstash](https://upstash.com)** - QStash and Workflows for serverless background job processing and workflow orchestration (SOC 2 Type II certified).
+
+## Database & Storage
+
+- **[PostgreSQL](https://www.postgresql.org/)** - Primary database for all application data.
+- **[Drizzle ORM](https://orm.drizzle.team/)** - Type-safe database toolkit and ORM.
+
+## Authentication & Payments
+
+- **[Better Auth](https://www.better-auth.com/)** - Modern authentication solution for secure user authentication.
+- **[Polar.sh](https://polar.sh)** - Payment processing and subscription management for our billing system.
+
+## Communication
+
+- **[Resend](https://resend.com)** - Transactional email delivery with high deliverability rates (SOC 2 Type II certified).
+
+## Monitoring & Analytics
+
+- **[OpenStatus](https://www.openstatus.dev/)** - Uptime monitoring and status page infrastructure.
+- **[Tinybird](https://www.tinybird.co/)** - Real-time analytics platform for inbox metrics, visitor tracking, and geolocation data (SOC 2 Type II certified).
+- **[DataFast](https://datafa.st/)** - Third-party web analytics script used for hosted site analytics.
+
+## Security & Compliance Commitment
+
+All third-party services we use are carefully vetted for:
+- SOC 2 Type II compliance (current or in progress)
+- GDPR compliance
+- Robust data encryption (in transit and at rest)
+- Regular security audits and penetration testing
+- High availability and disaster recovery capabilities
+
+We regularly review our vendor landscape to ensure we maintain the highest standards of security and privacy for our customers.

@@ -1,0 +1,129 @@
+---
+title: Overview
+description: Understand the billing, storage, email, and analytics responsibilities a self-hosted Cossistant deployment needs, and choose the setup path that fits your stack.
+---
+
+If you are self-hosting Cossistant, there are four infrastructure responsibilities you want to settle early: billing, storage, email, and analytics.
+
+Cossistant expects:
+
+- a clear billing mode decision: keep Polar enabled, or disable billing and run with unlimited self-hosted entitlements
+- object storage for uploads and public file reads
+- transactional email infrastructure that can send mail, receive replies, and report lifecycle events
+- analytics infrastructure for inbox metrics and live presence, or an explicit decision to disable those managed analytics features
+
+We recommend an AWS-first path for the official self-host setup because the repo already ships Terraform modules for it, but the docs in this section are organized around roles rather than vendors:
+
+- [Billing](/docs/self-host/billing) covers the `POLAR_ENABLED` switch, why Polar stays enabled by default, and what changes when billing is disabled
+- [Storage](/docs/self-host/storage) covers uploads, public file reads, and the AWS S3 setup path
+- [Email Setup](/docs/self-host/email-setup) covers transactional email, inbound replies, and how to choose between Resend and SES
+- [Analytics](/docs/self-host/analytics) covers Tinybird-backed analytics, the Tinybird/DataFast toggle env vars, and what happens when analytics are disabled
+
+## Billing responsibility
+
+Cossistant has two valid billing modes for self-hosting:
+
+- keep Polar enabled and preserve the hosted subscription and AI metering behavior
+- disable Polar and run in a self-hosted mode where billing flows, credit metering, and plan limits are bypassed
+
+Polar stays enabled by default so the repo behaves like the managed product unless you explicitly opt out.
+
+Use the [Billing guide](/docs/self-host/billing) to decide which mode you want and to configure `POLAR_ENABLED`.
+
+## Why the AWS-first path is recommended
+
+The repo already ships Terraform modules for both services:
+
+- `infra/aws/s3-public-setup`
+- `infra/aws/ses-email-setup`
+
+That matters because the self-host path is concrete instead of theoretical. You are not starting from scratch with generic storage or email plumbing. You are following infrastructure that already matches what the app expects at runtime.
+
+<Callout type="info">
+  Cossistant supports S3-compatible storage settings at runtime through
+  `S3_ENDPOINT` and `S3_FORCE_PATH_STYLE`, and it supports both `resend` and
+  `ses` as transactional email transports. The bundled Terraform setup paths in
+  this repo are AWS-first for storage and for the SES option.
+</Callout>
+
+## Storage responsibility
+
+Cossistant needs object storage where the API can generate presigned upload URLs and where uploaded files can be read back through stable public URLs.
+
+In practice that means:
+
+- the API signs uploads
+- the browser uploads directly to object storage
+- the app stores and renders the resulting public URLs
+- uploaded files can be grouped by organization, website, and entity
+
+Use the [Storage guide](/docs/self-host/storage) to set that up.
+
+## Email responsibility
+
+For email, Cossistant needs more than simple outbound delivery. The app also depends on reply routing and lifecycle events.
+
+In practice that means:
+
+- React Email renders the email content inside the app
+- outbound sending is selected by `EMAIL_TRANSPORT_PROVIDER`
+- reply-to addresses point to an inbound domain controlled by Cossistant
+- inbound replies eventually come back into the API as normalized webhook payloads
+- bounce, complaint, and failure events feed suppression and delivery monitoring
+
+The good news is that you can choose your transport:
+
+- `resend` is supported and remains the default
+- `ses` is supported and is the AWS-native path for self-hosting
+
+Use the [Email Setup guide](/docs/self-host/email-setup) to choose a provider and configure the full inbound and outbound path.
+
+## Analytics responsibility
+
+Cossistant uses analytics infrastructure for two product areas:
+
+- inbox analytics
+- live visitor presence and "last seen in app" enrichment
+
+For self-hosting, you have two valid paths:
+
+- keep Tinybird enabled and point the app at your Tinybird setup
+- disable Tinybird entirely and run without the Tinybird-backed analytics UI
+
+The app also includes a separate DataFast script for our hosted web analytics. Self-hosters can disable that independently.
+
+Use the [Analytics guide](/docs/self-host/analytics) to choose how you want to handle both Tinybird and DataFast in your deployment.
+
+## How the pieces fit together
+
+At a high level, a self-hosted deployment looks like this:
+
+1. A browser requests a presigned upload URL from the API.
+2. The API signs a `PUT` to S3 and returns the upload URL plus the public URL.
+3. The browser uploads the file directly to S3 instead of streaming it through the API.
+4. Cossistant sends email using React Email templates and the provider selected by `EMAIL_TRANSPORT_PROVIDER`.
+5. New reply-to addresses point to the inbound domain for the active email provider.
+6. Resend or SES delivers inbound replies and lifecycle events back into the API using the provider-specific bridge path configured in the app.
+7. The API turns those events into timeline messages, notification triggers, and bounce or complaint records.
+8. Polar-backed billing stays enabled by default unless you explicitly disable it with `POLAR_ENABLED=false`.
+9. Tinybird-backed inbox analytics and live presence are either enabled through your analytics setup or explicitly disabled through env flags.
+
+## Recommended setup order
+
+For a clean first deployment:
+
+1. Set up [Storage](/docs/self-host/storage) first and verify uploads.
+2. Read [Billing](/docs/self-host/billing) and decide whether Polar stays enabled or whether you want `POLAR_ENABLED=false`.
+3. Read [Email Setup](/docs/self-host/email-setup) and decide whether you want Resend or SES for transactional mail.
+4. Configure the chosen provider and verify outbound email plus inbound reply handling.
+5. Read [Analytics](/docs/self-host/analytics) and decide whether you will keep Tinybird enabled or disable Tinybird/DataFast for your deployment.
+6. If you are rolling out SES gradually, keep the default `EMAIL_TRANSPORT_PROVIDER=resend` until the SES path is healthy, then flip to `ses`.
+
+If you are doing a greenfield self-host deployment and do not plan to use Resend at all, you can move directly to SES once DNS, identities, and webhooks are confirmed working in your environment.
+
+## Guides
+
+- [Storage](/docs/self-host/storage)
+- [Billing](/docs/self-host/billing)
+- [Email Setup](/docs/self-host/email-setup)
+- [Analytics](/docs/self-host/analytics)

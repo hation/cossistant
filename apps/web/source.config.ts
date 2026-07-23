@@ -1,0 +1,131 @@
+import {
+	defineCollections,
+	defineConfig,
+	defineDocs,
+	frontmatterSchema,
+	metaSchema,
+} from "fumadocs-mdx/config";
+import { remarkAutoTypeTable } from "fumadocs-typescript";
+import rehypePrettyCode from "rehype-pretty-code";
+import { z } from "zod";
+
+import {
+	DOCS_TYPE_TABLE_BASE_PATH,
+	docsTypeTableGenerator,
+} from "@/lib/fumadocs-typescript";
+import { transformers } from "@/lib/highlight-code";
+
+const searchKindSchema = z.enum([
+	"guide",
+	"component",
+	"hook",
+	"type",
+	"concept",
+	"article",
+	"release",
+]);
+
+export default defineConfig({
+	mdxOptions: {
+		remarkPlugins: (plugins) => [
+			...plugins,
+			[
+				remarkAutoTypeTable,
+				{
+					generator: docsTypeTableGenerator,
+					outputName: "TypeTable",
+					options: {
+						basePath: DOCS_TYPE_TABLE_BASE_PATH,
+					},
+				},
+			],
+		],
+		rehypePlugins: (plugins) => {
+			plugins.shift();
+			plugins.push([
+				rehypePrettyCode,
+				{
+					theme: {
+						dark: "github-dark",
+						light: "github-light-default",
+					},
+					transformers,
+				},
+			]);
+
+			return plugins;
+		},
+	},
+});
+
+export const docs = defineDocs({
+	dir: "content/docs",
+	docs: {
+		schema: frontmatterSchema.extend({
+			preview: z.string().optional(),
+			index: z.boolean().default(false),
+			image: z.string().optional(),
+			canonical: z.string().optional(),
+			noindex: z.boolean().default(false),
+			keywords: z.array(z.string()).optional(),
+			updatedAt: z.string().optional(),
+			search: z
+				.object({
+					kind: searchKindSchema.optional(),
+					tags: z.array(z.string()).optional(),
+					aliases: z.array(z.string()).optional(),
+				})
+				.optional(),
+			/**
+			 * API routes only
+			 */
+			method: z.string().optional(),
+		}),
+		postprocess: {
+			includeProcessedMarkdown: true,
+		},
+	},
+	meta: {
+		schema: metaSchema.extend({
+			description: z.string().optional(),
+		}),
+	},
+});
+
+export const blog = defineCollections({
+	type: "doc",
+	dir: "./content/blog",
+	schema: z.object({
+		title: z.string(),
+		description: z.string(),
+		date: z.string(),
+		updatedAt: z.string().optional(),
+		author: z.string(),
+		tags: z.array(z.string()),
+		image: z.string().optional(),
+		published: z.boolean().default(true),
+		canonical: z.string().optional(),
+		noindex: z.boolean().default(false),
+		keywords: z.array(z.string()).optional(),
+		/** Featured article eligible for hero display */
+		top: z.boolean().default(false),
+		/** Slugs of related articles for cross-linking */
+		related: z.array(z.string()).optional(),
+		/** Custom URL slug override */
+		slug: z.string().optional(),
+	}),
+});
+
+export const changelog = defineCollections({
+	type: "doc",
+	dir: "./content/changelog",
+	schema: z.object({
+		version: z.string().optional(),
+		description: z.string(),
+		"tiny-excerpt": z.string().optional(),
+		"discord-announcement": z.string().optional(),
+		"x-announcement": z.string().optional(),
+		date: z.string(),
+		author: z.string(),
+	}),
+});

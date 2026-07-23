@@ -1,0 +1,134 @@
+---
+title: Pages & Layouts
+description: Keep the default widget until you need custom pages, inline embeds, or your own shell.
+search:
+  kind: guide
+  tags:
+    - routing
+    - navigation
+    - custom-pages
+    - typescript
+  aliases:
+    - useSupportNavigation
+    - RouteRegistry
+    - Support.Page
+    - navigate
+    - goBack
+---
+
+`Support` stretches pretty far before you need the full-custom track. Most layout changes still fit inside the built-in runtime.
+
+## Use this when
+
+- you want a different first screen or an extra page
+- you want support inline instead of floating
+- you need your own widget shell but still want the Support router and state
+
+## Smallest working change
+
+Use `customPages` when you want to replace one built-in page and keep the default shell.
+
+```tsx
+import { Support, useSupportNavigation } from "@cossistant/react";
+
+function CustomHomePage() {
+  const { navigate } = useSupportNavigation();
+
+  return (
+    <div className="flex h-full flex-col gap-4 p-6">
+      <h2 className="text-2xl font-semibold">Launch support</h2>
+      <p className="text-sm text-zinc-500">
+        Keep the default conversation page. Only change the first screen.
+      </p>
+
+      <button
+        className="border px-4 py-3 text-left"
+        onClick={() =>
+          navigate({
+            page: "CONVERSATION",
+            params: {
+              conversationId: "pending_docs_conversation",
+              initialMessage: "Help me launch with the React SDK",
+            },
+          })
+        }
+        type="button"
+      >
+        Start a conversation
+      </button>
+    </div>
+  );
+}
+
+<Support
+  customPages={[
+    {
+      name: "HOME",
+      component: CustomHomePage,
+    },
+  ]}
+/>;
+```
+
+## Common variants
+
+### Embed support inline
+
+Use `mode="responsive"` when support should live inside the page instead of floating above it.
+
+```tsx
+import { Support } from "@cossistant/react";
+
+export default function SupportPanel() {
+  return (
+    <div className="h-[560px] overflow-hidden border">
+      <Support mode="responsive" />
+    </div>
+  );
+}
+```
+
+<ComponentPreview name="support-responsive-embed" />
+
+### Own the shell with `Support.Root`
+
+Use full composition when you want your own trigger, content wrapper, and page registration.
+
+```tsx
+import { Support } from "@cossistant/react";
+
+function LaunchChecklistPage() {
+  return <div className="p-6">Your custom page</div>;
+}
+
+export default function App() {
+  return (
+    <Support.Root>
+      <Support.Trigger asChild>
+        <button type="button">Compose support</button>
+      </Support.Trigger>
+
+      <Support.Content className="border shadow-2xl">
+        <Support.Router>
+          <Support.Page component={LaunchChecklistPage} name="HOME" />
+        </Support.Router>
+      </Support.Content>
+    </Support.Root>
+  );
+}
+```
+
+<ComponentPreview name="support-full-composition" />
+
+`Support.Page` also works with `Support` when you want to keep the default widget and register one extra page.
+
+## When to stop here
+
+- `customPages`, `mode="responsive"`, or `Support.Root` give you enough control
+- you still want the Support router, state, and built-in conversation flow
+- you do not need a headless build
+
+## Next step
+
+- [Copy & Locale](/docs/support-component/text) if the next change is wording
+- [Advanced](/docs/advanced) when you want to leave the ready-made widget path and build your own UI

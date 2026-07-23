@@ -1,0 +1,39 @@
+{
+  "name": "@cossistant/workers",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@bull-board/api": "^6.14.2",
+    "@bull-board/hono": "^6.14.2",
+    "@cossistant/api": "workspace:*",
+    "@cossistant/core": "workspace:*",
+    "@cossistant/jobs": "workspace:*",
+    "@cossistant/redis": "workspace:*",
+    "@cossistant/transactional": "workspace:*",
+    "@cossistant/types": "workspace:*",
+    "@hono/node-server": "^1.19.3",
+    "@polar-sh/sdk": "^0.44.0",
+    "bullmq": "^5.34.8",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.10.1",
+    "ioredis": "^5.8.1",
+    "pg": "^8.16.3",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.22",
+    "@types/node": "^24.5.0",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.0.0"
+  },
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "build": "bun build src/index.ts --compile --outfile server",
+    "start": "bun run src/index.ts",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
+  }
+}

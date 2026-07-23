@@ -1,0 +1,40 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install and bun
+RUN npm install -g bun
+
+# Copy package files
+COPY package.json bun.lock turbo.json ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/core/package.json ./packages/core/
+COPY packages/transactional/package.json ./packages/transactional/
+COPY packages/types/package.json ./packages/types/
+COPY packages/jobs/package.json ./packages/jobs/
+COPY packages/facehash/package.json ./packages/facehash/
+COPY packages/tiny-markdown/package.json ./packages/tiny-markdown/
+COPY packages/redis/package.json ./packages/redis/
+COPY packages/location/package.json ./packages/location/
+COPY packages/memory/package.json ./packages/memory/
+COPY tinybird/package.json ./tinybird/
+
+# Install dependencies
+RUN bun install
+
+# Copy source files
+COPY . .
+
+# Build dependencies (transactional, types, location packages)
+# but skip the API binary compilation
+RUN bunx turbo run build --filter=@cossistant/api^...
+
+# # Build TypeScript types for the API
+# RUN cd apps/api && bun run build:types
+
+# Railway will set the PORT environment variable
+# EXPOSE is mainly for documentation, the actual port is controlled by env.PORT
+
+# Run with bun runtime instead of compiled binary
+CMD ["bun", "run", "apps/api/src/index.ts"]

@@ -1,0 +1,34 @@
+{
+  "name": "@cossistant/release",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "cossistant-release": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.51.2",
+    "@openrouter/ai-sdk-provider": "^2.5.1",
+    "@xdevplatform/xdk": "^0.5.0",
+    "ai": "^6.0.154",
+    "commander": "^14.0.0",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.3.1",
+    "kleur": "^4.1.5",
+    "ora": "^8.2.0",
+    "prompts": "^2.4.2",
+    "yaml": "^2.8.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*",
+    "@types/bun": "^1.2.22",
+    "@types/fs-extra": "^11.0.4",
+    "@types/prompts": "^2.4.9"
+  },
+  "scripts": {
+    "release": "bun run src/index.ts",
+    "check-types": "tsc --noEmit --project tsconfig.json",
+    "test": "bun test src"
+  }
+}

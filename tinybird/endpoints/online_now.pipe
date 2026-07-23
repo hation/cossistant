@@ -1,0 +1,26 @@
+DESCRIPTION >
+	Visitors currently online with latest page path, geo, and attribution snapshot.
+
+NODE online
+SQL >
+	%
+	SELECT
+		visitor_id AS entity_id,
+		'visitor' AS entity_type,
+		'' AS name,
+		'' AS image,
+		nullIf(argMaxIf(country_code, timestamp, country_code != ''), '') AS country_code,
+		nullIf(argMaxIf(city, timestamp, city != ''), '') AS city,
+		if(maxIf(latitude, latitude != 0) = 0, NULL, toFloat64(maxIf(latitude, latitude != 0))) AS latitude,
+		if(maxIf(longitude, longitude != 0) = 0, NULL, toFloat64(maxIf(longitude, longitude != 0))) AS longitude,
+		formatDateTime(max(timestamp), '%Y-%m-%dT%H:%M:%SZ', 'UTC') AS last_seen,
+		nullIf(argMax(page_path, timestamp), '') AS page_path,
+		nullIf(argMax(attribution_channel, timestamp), '') AS attribution_channel
+	FROM visitor_activity_events
+	WHERE website_id = {{ String(website_id) }}
+		AND timestamp > now() - INTERVAL 30 MINUTE
+	GROUP BY visitor_id
+	HAVING max(timestamp) > now() - INTERVAL {{ Int32(minutes, 5) }} MINUTE
+	ORDER BY max(timestamp) DESC
+
+TYPE endpoint

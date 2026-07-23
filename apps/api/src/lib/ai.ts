@@ -1,0 +1,646 @@
+/**
+ * Centralized AI SDK Setup
+ *
+ * This module provides a unified configuration for the Vercel AI SDK with:
+ * - OpenRouter as the primary provider
+ * - DevTools middleware for debugging (in development)
+ * - Configurable model selection and parameters
+ *
+ * Usage:
+ *   import { createModel, createEmbeddingModel, generateText, streamText } from "@api/lib/ai";
+ *
+ *   // Use with AI SDK functions
+ *   const result = await generateText({
+ *     model: createModel("openai/gpt-4o"),
+ *     prompt: "Hello!",
+ *   });
+ */
+
+import { devToolsMiddleware } from "@ai-sdk/devtools";
+import { createOpenAI } from "@ai-sdk/openai";
+import { env } from "@api/env";
+import {
+	normalizeOpenRouterByokErrorCode,
+	type OpenRouterBillingSource,
+	OpenRouterByokError,
+	type OpenRouterCredentialMode,
+	recordOpenRouterByokFailure,
+	recordOpenRouterByokSuccess,
+	resolveOpenRouterCredentialsForWebsite,
+	type WebsiteOpenRouterContext,
+} from "@api/lib/openrouter-byok/resolver";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import {
+	APICallError,
+	embed,
+	embedMany,
+	type LanguageModel,
+	wrapLanguageModel,
+} from "ai";
+
+// Re-export commonly used AI SDK functions for convenience
+export {
+	APICallError,
+	EmptyResponseBodyError,
+	generateObject,
+	generateText,
+	hasToolCall,
+	type ModelMessage,
+	NoContentGeneratedError,
+	NoObjectGeneratedError,
+	NoOutputGeneratedError,
+	NoSuchModelError,
+	Output,
+	stepCountIs,
+	streamObject,
+	streamText,
+	ToolLoopAgent,
+	type ToolSet,
+} from "ai";
+
+/**
+ * Check if DevTools should be enabled
+ * Only enabled in development mode
+ */
+const isDevToolsEnabled = env.NODE_ENV === "development";
+
+/**
+ * AI provider type — both OpenRouter and OpenAI-compatible providers expose
+ * compatible `.chat(modelId)` and `.textEmbeddingModel(modelId)` methods.
+ */
+type AiProvider = ReturnType<typeof createOpenRouter> | ReturnType<typeof createOpenAI>;
+
+/**
+ * Default AI provider instance (lazy-initialized)
+ */
+let providerInstance: AiProvider | null = null;
+
+/**
+ * Get or create the AI provider based on AI_PROVIDER env var.
+ *
+ * - "openrouter" (default): uses createOpenRouter with OPENROUTER_API_KEY
+ * - "openai-compatible": uses createOpenAI with OPENAI_BASE_URL + OPENAI_API_KEY
+ *   (e.g. for 方舟 / Ark, DeepSeek, Ollama, vLLM, etc.)
+ */
+function getProvider(): AiProvider {
+	if (providerInstance) {
+		return providerInstance;
+	}
+
+	if (env.AI_PROVIDER === "openai-compatible") {
+		if (!env.OPENAI_API_KEY) {
+			throw new Error(
+				"OPENAI_API_KEY is required when AI_PROVIDER=openai-compatible"
+			);
+		}
+		if (!env.OPENAI_BASE_URL) {
+			throw new Error(
+				"OPENAI_BASE_URL is required when AI_PROVIDER=openai-compatible"
+			);
+		}
+		providerInstance = createOpenAI({
+			apiKey: env.OPENAI_API_KEY,
+			baseURL: env.OPENAI_BASE_URL,
+			name: "openai-compatible",
+		});
+		return providerInstance;
+	}
+
+	// Default: OpenRouter
+	if (!env.OPENROUTER_API_KEY) {
+		throw new Error(
+			"OPENROUTER_API_KEY is not configured. Please set it in your environment variables, or set AI_PROVIDER=openai-compatible with OPENAI_BASE_URL and OPENAI_API_KEY."
+		);
+	}
+	providerInstance = createOpenRouter({
+		apiKey: env.OPENROUTER_API_KEY,
+	});
+	return providerInstance;
+}
+
+function createProviderForApiKey(apiKey: string): AiProvider {
+	if (env.AI_PROVIDER === "openai-compatible") {
+		return createOpenAI({
+			apiKey,
+			baseURL: env.OPENAI_BASE_URL,
+			name: "openai-compatible",
+		});
+	}
+	return createOpenRouter({ apiKey });
+}
+
+/**
+ * Model configuration options
+ */
+export type ModelOptions = {
+	/**
+	 * Enable DevTools middleware for this model
+	 * Defaults to true in development, false in production
+	 */
+	devTools?: boolean;
+};
+
+export type WebsiteModelOptions = ModelOptions & {
+	context: WebsiteOpenRouterContext;
+	openRouterByokMode?: OpenRouterCredentialMode;
+};
+
+export type WebsiteLanguageModelResolution = {
+	model: LanguageModel;
+	billingSource: OpenRouterBillingSource;
+	fallbackFromBillingSource?: "customer_openrouter";
+	fallbackErrorCode?: string;
+	usedOpenRouterByokFallback?: boolean;
+};
+
+export type WebsiteLanguageModelOperationResult<TResult> = Omit<
+	WebsiteLanguageModelResolution,
+	"model"
+> & {
+	result: TResult;
+};
+
+export type WebsiteModelKind = "chat" | "structured" | "raw";
+
+type WrappableLanguageModel = Parameters<typeof wrapLanguageModel>[0]["model"];
+
+export class OpenRouterByokFallbackRequiredError extends Error {
+	constructor(params: {
+		errorCode: string;
+		message?: string;
+		cause?: unknown;
+		alreadyRecorded?: boolean;
+	}) {
+		super(
+			params.message ??
+				"Customer OpenRouter key failed and requires a retry or fallback.",
+			{ cause: params.cause }
+		);
+		this.name = "OpenRouterByokFallbackRequiredError";
+		this.errorCode = params.errorCode;
+		this.alreadyRecorded = params.alreadyRecorded === true;
+	}
+
+	readonly billingSource = "customer_openrouter" as const;
+	readonly errorCode: string;
+	readonly fallbackEligible = true;
+	readonly alreadyRecorded: boolean;
+}
+
+function wrapWithOptionalDevTools(
+	model: WrappableLanguageModel,
+	devTools: boolean
+): WrappableLanguageModel {
+	if (!devTools) {
+		return model;
+	}
+
+	return wrapLanguageModel({
+		model,
+		middleware: devToolsMiddleware(),
+	});
+}
+
+function isAbortError(error: unknown): boolean {
+	return error instanceof Error && error.name === "AbortError";
+}
+
+function isAppTimeoutError(error: unknown): boolean {
+	return error instanceof Error && error.message === "translation_timeout";
+}
+
+function isLikelyTransportError(error: Error): boolean {
+	const payload = `${error.name} ${error.message}`.toLowerCase();
+	return [
+		"fetch failed",
+		"network",
+		"connection",
+		"connect",
+		"econnreset",
+		"econnrefused",
+		"enotfound",
+		"etimedout",
+		"eai_again",
+		"socket",
+		"dns",
+		"tls",
+	].some((needle) => payload.includes(needle));
+}
+
+export function isOpenRouterByokFallbackEligibleError(
+	error: unknown,
+	options: { localAbort?: boolean } = {}
+): boolean {
+	if (error instanceof OpenRouterByokError) {
+		return error.code === "decrypt_failed";
+	}
+
+	if (APICallError.isInstance(error)) {
+		const statusCode = error.statusCode;
+		if (statusCode === undefined) {
+			return true;
+		}
+		return (
+			statusCode === 401 ||
+			statusCode === 402 ||
+			statusCode === 403 ||
+			statusCode === 408 ||
+			statusCode === 409 ||
+			statusCode === 429 ||
+			statusCode >= 500
+		);
+	}
+
+	if (!(error instanceof Error)) {
+		return false;
+	}
+
+	if (isAbortError(error)) {
+		return options.localAbort === false;
+	}
+
+	if (isAppTimeoutError(error)) {
+		return false;
+	}
+
+	return isLikelyTransportError(error);
+}
+
+function createModelFromProvider(params: {
+	provider: AiProvider;
+	modelId: string;
+	kind: WebsiteModelKind;
+	devTools: boolean;
+}): LanguageModel {
+	if (params.kind === "raw") {
+		return params.provider.chat(params.modelId);
+	}
+
+	const model =
+		params.kind === "structured"
+			? params.provider.chat(params.modelId, {
+					provider: {
+						require_parameters: true,
+					},
+				})
+			: params.provider.chat(params.modelId);
+
+	return wrapWithOptionalDevTools(model, params.devTools);
+}
+
+function createCossistantModelResolution(params: {
+	modelId: string;
+	kind: WebsiteModelKind;
+	devTools: boolean;
+	fallbackErrorCode?: string;
+}): WebsiteLanguageModelResolution {
+	return {
+		model: createModelFromProvider({
+			provider: getProvider(),
+			modelId: params.modelId,
+			kind: params.kind,
+			devTools: params.devTools,
+		}),
+		billingSource: "cossistant",
+		fallbackFromBillingSource: params.fallbackErrorCode
+			? "customer_openrouter"
+			: undefined,
+		fallbackErrorCode: params.fallbackErrorCode,
+		usedOpenRouterByokFallback: Boolean(params.fallbackErrorCode),
+	};
+}
+
+async function createWebsiteModelResolution(params: {
+	modelId: string;
+	context: WebsiteOpenRouterContext;
+	kind: WebsiteModelKind;
+	devTools: boolean;
+	mode?: OpenRouterCredentialMode;
+}): Promise<WebsiteLanguageModelResolution> {
+	const credentials = await resolveOpenRouterCredentialsForWebsite(
+		params.context,
+		{ mode: params.mode }
+	);
+	const provider = createProviderForApiKey(credentials.apiKey);
+
+	return {
+		model: createModelFromProvider({
+			provider,
+			modelId: params.modelId,
+			kind: params.kind,
+			devTools: params.devTools,
+		}),
+		billingSource: credentials.billingSource,
+	};
+}
+
+export async function runWithOpenRouterByokFallback<TResult>(params: {
+	modelId: string;
+	options: WebsiteModelOptions;
+	kind?: WebsiteModelKind;
+	fallbackStrategy?: "inline" | "throw";
+	operation: (
+		resolution: WebsiteLanguageModelResolution
+	) => Promise<TResult> | TResult;
+	beforeOperation?: (
+		resolution: WebsiteLanguageModelResolution
+	) => Promise<void> | void;
+	canFallback?: (error: unknown) => boolean | Promise<boolean>;
+	isLocalAbort?: (error: unknown) => boolean;
+	onResolution?: (resolution: WebsiteLanguageModelResolution) => void;
+}): Promise<WebsiteLanguageModelOperationResult<TResult>> {
+	const {
+		devTools = isDevToolsEnabled,
+		context,
+		openRouterByokMode,
+	} = params.options;
+	const kind = params.kind ?? "chat";
+	const fallbackStrategy = params.fallbackStrategy ?? "inline";
+	let initialResolution: WebsiteLanguageModelResolution;
+
+	try {
+		initialResolution = await createWebsiteModelResolution({
+			modelId: params.modelId,
+			context,
+			kind,
+			devTools,
+			mode: openRouterByokMode,
+		});
+		params.onResolution?.(initialResolution);
+	} catch (error) {
+		if (
+			!(error instanceof OpenRouterByokError && error.code === "decrypt_failed")
+		) {
+			throw error;
+		}
+
+		const fallbackErrorCode = normalizeOpenRouterByokErrorCode(error);
+		if (fallbackStrategy === "throw") {
+			throw new OpenRouterByokFallbackRequiredError({
+				errorCode: fallbackErrorCode,
+				cause: error,
+				alreadyRecorded: true,
+			});
+		}
+		const fallbackResolution = createCossistantModelResolution({
+			modelId: params.modelId,
+			kind,
+			devTools,
+			fallbackErrorCode,
+		});
+		params.onResolution?.(fallbackResolution);
+		await params.beforeOperation?.(fallbackResolution);
+		return {
+			result: await params.operation(fallbackResolution),
+			billingSource: fallbackResolution.billingSource,
+			fallbackFromBillingSource: fallbackResolution.fallbackFromBillingSource,
+			fallbackErrorCode: fallbackResolution.fallbackErrorCode,
+			usedOpenRouterByokFallback: fallbackResolution.usedOpenRouterByokFallback,
+		};
+	}
+
+	try {
+		await params.beforeOperation?.(initialResolution);
+		const result = await params.operation(initialResolution);
+		await recordOpenRouterByokSuccess({
+			context,
+			billingSource: initialResolution.billingSource,
+		});
+
+		return {
+			result,
+			billingSource: initialResolution.billingSource,
+		};
+	} catch (error) {
+		const canFallback =
+			initialResolution.billingSource === "customer_openrouter" &&
+			isOpenRouterByokFallbackEligibleError(error, {
+				localAbort: params.isLocalAbort?.(error),
+			}) &&
+			(await (params.canFallback?.(error) ?? true));
+
+		if (!canFallback) {
+			throw error;
+		}
+
+		const fallbackErrorCode = normalizeOpenRouterByokErrorCode(error);
+		if (fallbackStrategy === "throw") {
+			throw new OpenRouterByokFallbackRequiredError({
+				errorCode: fallbackErrorCode,
+				cause: error,
+			});
+		}
+		await recordOpenRouterByokFailure({
+			context,
+			billingSource: initialResolution.billingSource,
+			error,
+		});
+
+		const fallbackResolution = createCossistantModelResolution({
+			modelId: params.modelId,
+			kind,
+			devTools,
+			fallbackErrorCode,
+		});
+		params.onResolution?.(fallbackResolution);
+		await params.beforeOperation?.(fallbackResolution);
+
+		return {
+			result: await params.operation(fallbackResolution),
+			billingSource: fallbackResolution.billingSource,
+			fallbackFromBillingSource: fallbackResolution.fallbackFromBillingSource,
+			fallbackErrorCode: fallbackResolution.fallbackErrorCode,
+			usedOpenRouterByokFallback: fallbackResolution.usedOpenRouterByokFallback,
+		};
+	}
+}
+
+/**
+ * Create a language model with OpenRouter and optional DevTools integration
+ *
+ * @param modelId - The model ID (e.g., "openai/gpt-4o", "anthropic/claude-3-opus")
+ * @param options - Optional configuration
+ * @returns A language model ready for use with AI SDK functions
+ *
+ * @example
+ * ```ts
+ * import { createModel, generateText } from "@api/lib/ai";
+ *
+ * const result = await generateText({
+ *   model: createModel("openai/gpt-4o"),
+ *   prompt: "Hello!",
+ * });
+ * ```
+ */
+export function createModel(
+	modelId: string,
+	options: ModelOptions = {}
+): LanguageModel {
+	const { devTools = isDevToolsEnabled } = options;
+
+	const provider = getProvider();
+	return wrapWithOptionalDevTools(provider.chat(modelId), devTools);
+}
+
+export async function createModelForWebsite(
+	modelId: string,
+	options: WebsiteModelOptions
+): Promise<WebsiteLanguageModelResolution> {
+	const { devTools = isDevToolsEnabled, context, openRouterByokMode } = options;
+	return createWebsiteModelResolution({
+		modelId,
+		context,
+		kind: "chat",
+		devTools,
+		mode: openRouterByokMode,
+	});
+}
+
+/**
+ * Create a language model for structured-output calls that require a provider
+ * supporting the full request parameter set.
+ */
+export function createStructuredOutputModel(
+	modelId: string,
+	options: ModelOptions = {}
+): LanguageModel {
+	const { devTools = isDevToolsEnabled } = options;
+
+	const provider = getProvider();
+	return wrapWithOptionalDevTools(
+		provider.chat(modelId, {
+			provider: {
+				require_parameters: true,
+			},
+		}),
+		devTools
+	);
+}
+
+export async function createStructuredOutputModelForWebsite(
+	modelId: string,
+	options: WebsiteModelOptions
+): Promise<WebsiteLanguageModelResolution> {
+	const { devTools = isDevToolsEnabled, context, openRouterByokMode } = options;
+	return createWebsiteModelResolution({
+		modelId,
+		context,
+		kind: "structured",
+		devTools,
+		mode: openRouterByokMode,
+	});
+}
+
+/**
+ * Create a language model WITHOUT DevTools middleware
+ * Useful for high-frequency or background operations where DevTools overhead is unwanted
+ *
+ * @param modelId - The model ID (e.g., "openai/gpt-4o")
+ * @returns A language model without DevTools wrapping
+ */
+export function createModelRaw(modelId: string): LanguageModel {
+	const provider = getProvider();
+	return provider.chat(modelId);
+}
+
+export async function createModelRawForWebsite(
+	modelId: string,
+	context: WebsiteOpenRouterContext
+): Promise<WebsiteLanguageModelResolution> {
+	return createWebsiteModelResolution({
+		modelId,
+		context,
+		kind: "raw",
+		devTools: false,
+	});
+}
+
+/**
+ * Create an embedding model using the OpenRouter provider.
+ */
+function createEmbeddingModel(modelId?: string) {
+	const provider = getProvider();
+	return provider.textEmbeddingModel(
+		modelId ?? env.AI_MODEL_EMBEDDING ?? env.OPENROUTER_EMBEDDING_MODEL ?? "openai/text-embedding-3-small"
+	);
+}
+
+/**
+ * Generate an embedding for a single text using AI SDK with OpenRouter.
+ *
+ * @param text - The text to embed
+ * @param model - Optional model override (defaults to OPENROUTER_EMBEDDING_MODEL env var)
+ * @returns A 1536-dimensional embedding vector (for text-embedding-3-small)
+ */
+export async function generateEmbedding(
+	text: string,
+	model?: string
+): Promise<number[]> {
+	const { embedding } = await embed({
+		model: createEmbeddingModel(model),
+		value: text,
+	});
+	return embedding;
+}
+
+/**
+ * Generate embeddings for multiple texts using AI SDK with OpenRouter.
+ * The AI SDK automatically handles chunking for large requests.
+ *
+ * @param texts - Array of texts to embed
+ * @param model - Optional model override (defaults to OPENROUTER_EMBEDDING_MODEL env var)
+ * @returns Array of 1536-dimensional embedding vectors
+ */
+export async function generateEmbeddings(
+	texts: string[],
+	model?: string
+): Promise<number[][]> {
+	if (texts.length === 0) {
+		return [];
+	}
+
+	const { embeddings } = await embedMany({
+		model: createEmbeddingModel(model),
+		values: texts,
+	});
+	return embeddings;
+}
+
+/**
+ * Commonly used model IDs for convenience.
+ * When using AI_PROVIDER=openai-compatible (e.g. 方舟), override via env vars:
+ *   AI_MODEL_DEFAULT, AI_MODEL_FAST, AI_MODEL_SUMMARY, AI_MODEL_EMBEDDING
+ */
+export const Models = {
+	// OpenAI models
+	GPT4O: env.AI_MODEL_DEFAULT || "openai/gpt-4o",
+	GPT4OMini: env.AI_MODEL_FAST || "openai/gpt-4o-mini",
+	GPT4: "openai/gpt-4",
+	GPT35Turbo: "openai/gpt-3.5-turbo",
+
+	// Anthropic models
+	Claude3Opus: "anthropic/claude-3-opus",
+	Claude3Sonnet: "anthropic/claude-3-sonnet",
+	Claude35Sonnet: "anthropic/claude-3.5-sonnet",
+	Claude3Haiku: "anthropic/claude-3-haiku",
+
+	// Fast/cheap models for background tasks
+	Fast: env.AI_MODEL_FAST || "openai/gpt-4o-mini",
+	Cheap: env.AI_MODEL_FAST || "openai/gpt-4o-mini",
+
+	// Embedding models
+	TextEmbedding3Small: env.AI_MODEL_EMBEDDING || "openai/text-embedding-3-small",
+	TextEmbedding3Large: "openai/text-embedding-3-large",
+} as const;
+
+/**
+ * Default models for specific use cases
+ */
+export const DefaultModels = {
+	/** Fast model for non-critical tasks like summaries */
+	summary: env.AI_MODEL_SUMMARY || env.AI_MODEL_FAST || Models.GPT4OMini,
+	/** Model for prompt generation */
+	promptGeneration: env.AI_MODEL_DEFAULT || "openai/gpt-5.2",
+	/** Default embedding model */
+	embedding: Models.TextEmbedding3Small,
+} as const;

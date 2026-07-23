@@ -1,0 +1,99 @@
+---
+title: Copy & Locale
+description: Change widget copy and language without rewriting the UI.
+search:
+  kind: guide
+  tags:
+    - localization
+    - i18n
+    - types
+    - text
+  aliases:
+    - Text
+    - useSupportText
+    - SupportLocale
+    - common.actions.askQuestion
+---
+
+Change the widget voice the same way you change the widget UI: keep the default runtime and override only what you need.
+
+## Use this when
+
+- you want to rename labels or buttons
+- you need a second language
+- you want copy that reacts to visitor or app context
+
+## Smallest working change
+
+```tsx
+import { Support } from "@cossistant/react";
+
+<Support
+  locale="fr"
+  content={{
+    "common.actions.askQuestion": {
+      en: "Reach out",
+      fr: "Contactez-nous",
+    },
+    "page.home.greeting": {
+      en: "Need help?",
+      fr: "Besoin d'aide ?",
+    },
+  }}
+/>;
+```
+
+Built-in locales are `en`, `fr`, and `es`. Fallback order is: explicit `locale`, browser locale, then English.
+
+## Common variants
+
+### Use typed copy inside custom UI
+
+Use `<Text />` for markup or `useSupportText()` when you need a string in code.
+
+```tsx
+import { Text, useSupportText } from "@cossistant/react";
+
+export function AskButton() {
+  const text = useSupportText();
+
+  return (
+    <button className="cta">
+      <Text as="span" textKey="common.actions.askQuestion" />
+      <span className="hint">
+        {text("page.home.history.more", { count: 2 })}
+      </span>
+    </button>
+  );
+}
+```
+
+### Add a custom locale
+
+You can pass any locale code as long as you provide the strings for it.
+
+```tsx
+<Support
+  locale="en-support"
+  content={{
+    "common.actions.askQuestion": {
+      "en-support": "Talk to us",
+    },
+  }}
+/>
+```
+
+## When to stop here
+
+- the default UI is fine and you only need different wording
+- one or two overrides are enough
+- your team wants the widget to follow product voice without a custom page
+
+## Next step
+
+- [Hooks Reference](/docs/support-component/hooks) if you need code-level control in custom components
+- [Types Reference](/docs/support-component/types) when you need the shared widget types behind these APIs
+
+## Debugging tip
+
+Every rendered `<Text />` includes `data-key-name="..."` in the DOM, so you can inspect which key is driving a string before you override it.

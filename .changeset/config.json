@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": [
+    "@changesets/changelog-github",
+    {
+      "repo": "cossistantcom/cossistant"
+    }
+  ],
+  "commit": false,
+  "fixed": [
+    [
+      "@cossistant/core",
+      "@cossistant/react",
+      "@cossistant/types",
+      "@cossistant/next",
+      "@cossistant/browser"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "minor",
+  "ignore": [
+    "@cossistant/api",
+    "@cossistant/web",
+    "@cossistant/location",
+    "@cossistant/transactional",
+    "@cossistant/workers",
+    "@cossistant/facehash-landing"
+  ]
+}

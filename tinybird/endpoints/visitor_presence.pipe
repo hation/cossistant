@@ -1,0 +1,28 @@
+DESCRIPTION >
+	Visitor presence entries (online + away) with latest page path and attribution.
+
+NODE presence
+SQL >
+	%
+	SELECT
+		visitor_id,
+		if(
+			max(timestamp) > now() - INTERVAL {{ Int32(online_minutes, 5) }} MINUTE,
+			'online',
+			'away'
+		) AS status,
+		formatDateTime(max(timestamp), '%Y-%m-%dT%H:%M:%SZ', 'UTC') AS last_seen_at,
+		nullIf(argMaxIf(city, timestamp, city != ''), '') AS city,
+		nullIf(argMaxIf(country_code, timestamp, country_code != ''), '') AS country_code,
+		if(maxIf(latitude, latitude != 0) = 0, NULL, toFloat64(maxIf(latitude, latitude != 0))) AS latitude,
+		if(maxIf(longitude, longitude != 0) = 0, NULL, toFloat64(maxIf(longitude, longitude != 0))) AS longitude,
+		nullIf(argMax(page_path, timestamp), '') AS page_path,
+		nullIf(argMax(attribution_channel, timestamp), '') AS attribution_channel
+	FROM visitor_activity_events
+	WHERE website_id = {{ String(website_id) }}
+		AND timestamp > now() - INTERVAL {{ Int32(away_minutes, 30) }} MINUTE
+	GROUP BY visitor_id
+	ORDER BY max(timestamp) DESC
+	LIMIT {{ Int32(limit, 100) }}
+
+TYPE endpoint

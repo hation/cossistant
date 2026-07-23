@@ -1,0 +1,26 @@
+{
+  "name": "@cossistant/jobs",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./triggers": "./src/triggers/index.ts",
+    "./workflow-state": "./src/workflow-state.ts"
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@cossistant/redis": "workspace:*",
+    "bullmq": "^5.34.8"
+  },
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "root": true,
+  "pages": [
+    "(root)",
+    "quickstart",
+    "support-component",
+    "user-feedback",
+    "advanced",
+    "concepts",
+    "others",
+    "self-host"
+  ]
+}

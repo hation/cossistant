@@ -1,0 +1,4 @@
+CREATE INDEX "conversation_org_website_updated_idx" ON "conversation" USING btree ("organization_id","website_id","updated_at","id");--> statement-breakpoint
+CREATE INDEX "conversation_org_website_created_idx" ON "conversation" USING btree ("organization_id","website_id","created_at","id");--> statement-breakpoint
+CREATE INDEX "conversation_view_org_conv_deleted_idx" ON "conversation_view" USING btree ("organization_id","conversation_id","deleted_at");--> statement-breakpoint
+CREATE INDEX "message_last_per_conversation_idx" ON "message" USING btree ("organization_id","conversation_id","created_at");

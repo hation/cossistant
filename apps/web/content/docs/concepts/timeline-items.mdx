@@ -1,0 +1,169 @@
+---
+title: Timeline Items
+description: Flexible building blocks that make up conversation timelines.
+---
+
+## What are Timeline Items?
+
+**Timeline items** are the building blocks of [conversations](/docs/concepts/conversations). Instead of treating a conversation as a flat list of messages, Cossistant stores a timeline of structured records that can represent both chat content and everything happening around it.
+
+This design enables rich, auditable conversation histories with:
+
+- **Messages**: Visitor, human agent, or AI message content
+- **Events**: System activities and state changes
+- **Identification records**: Visitor/contact identification activity
+- **Tool activity**: AI and tool timeline records
+
+## Why Timeline Items?
+
+Traditional chat systems only handle messages. Cossistant's timeline architecture provides:
+
+- **Complete audit trail**: See when agents joined, when status changed, who resolved the conversation
+- **Rich context**: System events provide context between messages
+- **Flexibility**: Mix messages, events, identification, and tool activity in one ordered history
+- **Extensibility**: New item types can be added without breaking existing conversations
+
+## Current Item Types
+
+### Message Items
+
+Message items hold the actual content exchanged in a conversation. They can come from a visitor, a human teammate, or an AI agent.
+
+The important implementation detail is that `text` remains the original message body. Rich content and derived content live in `parts`, so one timeline item can keep the original message while also storing things like attachments, metadata, or translations.
+
+#### Canonical Timeline Item Shape
+
+<auto-type-table
+  path="packages/types/src/api/timeline-item.ts"
+  name="TimelineItem"
+  variant="property"
+/>
+
+**Message Parts:**
+
+- **text**: Plain text content
+- **image**: Image attachments with URL and metadata
+- **file**: File attachments with URL, name, size
+- **translation**: Stored translated text for a specific audience
+- **metadata**: Source channel details such as widget, email, or API
+
+Additional AI and internal parts can also appear in the same `parts` array, but conceptually the important rule is that `parts` enrich the message instead of replacing it.
+
+### Event Items
+
+Event items are system-generated records that explain what changed around the conversation.
+
+Common examples include:
+
+- **assigned**: Agent assigned to conversation
+- **unassigned**: Agent removed from conversation
+- **participant_requested**: Another participant was requested
+- **participant_joined**: Agent joined the conversation
+- **participant_left**: Agent left the conversation
+- **status_changed**: Conversation status updated
+- **priority_changed**: Priority level adjusted
+- **tag_added**: Tag applied to conversation
+- **tag_removed**: Tag removed from conversation
+- **resolved**: Conversation marked as resolved
+- **reopened**: Resolved conversation reopened
+- **visitor_blocked**: Visitor blocked from support
+- **visitor_unblocked**: Visitor unblocked
+- **visitor_identified**: A visitor was linked to contact information
+- **ai_paused / ai_resumed**: AI handling state changed
+
+Events capture **who** did **what** and **when**, creating a transparent history.
+
+### Identification Items
+
+Identification items capture moments where the visitor becomes known or their identity changes in a meaningful way. They help preserve an auditable record of contact identification and related lifecycle changes inside the same conversation timeline.
+
+### Tool Items
+
+Tool items represent AI and tool activity that is written into the timeline. Depending on visibility and tool policy, they can power customer-facing progress, internal logs, or decision traces without needing a separate storage model.
+
+## Translation Parts
+
+Translations are stored as `translation` parts on the same timeline item instead of replacing the original `text`. That lets Cossistant keep the source message forever while resolving the best display text for each audience.
+
+- **team** translations are used for dashboard-facing display
+- **visitor** translations are used for widget or other visitor-facing display
+- The dashboard can show translated text and still offer **Show original**
+- The widget can prefer a visitor-facing translation when one exists
+
+#### Translation Part Shape
+
+<auto-type-table
+  path="packages/types/src/api/timeline-item.ts"
+  name="TimelinePartTranslation"
+  variant="property"
+/>
+
+#### Example
+
+```json
+{
+  "type": "message",
+  "text": "Hola, necesito ayuda con mi factura",
+  "parts": [
+    {
+      "type": "translation",
+      "text": "Hello, I need help with my invoice",
+      "sourceLanguage": "es",
+      "targetLanguage": "en",
+      "audience": "team",
+      "mode": "auto",
+      "modelId": "google/gemini-2.5-flash-lite"
+    }
+  ]
+}
+```
+
+## Timeline Item Properties
+
+All timeline items share common fields:
+
+- **id**: Unique identifier
+- **conversationId**: Parent conversation
+- **organizationId**: Owning organization
+- **type**: Item type (`message`, `event`, `identification`, `tool`)
+- **text**: Canonical/original message text when applicable
+- **parts**: Array of structured content parts
+- **visibility**: `public` or `private` (internal agent notes)
+- **createdAt**: Timestamp
+
+**Actor fields** (who created the item):
+
+- **visitorId**: If created by visitor
+- **userId**: If created by human agent
+- **aiAgentId**: If created by AI agent
+
+`deletedAt` exists as an internal lifecycle field, but it is usually not part of the day-to-day conceptual model when reasoning about timelines.
+
+## Visibility Control
+
+Timeline items can be:
+
+- **public**: Visible to visitors and agents (default)
+- **private**: Internal agent notes, hidden from visitors
+
+This enables agents to:
+
+- Add context for other team members
+- Document resolutions internally
+- Share insights without visitor visibility
+
+## Timeline Ordering
+
+Items are ordered chronologically by `createdAt` timestamp, providing a linear conversation history.
+
+The most recent item (`lastTimelineItem`) is cached on the conversation for:
+
+- Sorting conversations by activity
+- Displaying conversation previews
+- Determining unread status
+
+## Learn More
+
+- **[Conversations](/docs/concepts/conversations)**: Chat threads containing timeline items
+- **[Visitors](/docs/concepts)**: Anonymous users who create timeline items
+- **[Contacts](/docs/concepts/contacts)**: Identified users with persistent timelines

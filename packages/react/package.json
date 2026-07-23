@@ -1,0 +1,146 @@
+{
+  "name": "@cossistant/react",
+  "type": "module",
+  "version": "0.2.0",
+  "private": false,
+  "author": "Cossistant team",
+  "description": "Headless React SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
+  "keywords": [
+    "react",
+    "headless-ui",
+    "support-widget",
+    "chat-widget",
+    "customer-support",
+    "helpdesk",
+    "live-chat",
+    "ai-support",
+    "websocket",
+    "typescript",
+    "tailwind",
+    "accessibility"
+  ],
+  "bugs": {
+    "url": "https://github.com/cossistantcom/cossistant/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cossistantcom/cossistant.git",
+    "directory": "packages/react"
+  },
+  "license": "MIT",
+  "homepage": "https://cossistant.com",
+  "exports": {
+    ".": "./src/index.ts",
+    "./feedback": "./src/feedback/index.tsx",
+    "./primitives": "./src/primitives/index.ts",
+    "./primitives/button": "./src/primitives/button.tsx",
+    "./primitives/command-block-utils": "./src/primitives/command-block-utils.ts",
+    "./primitives/conversation-timeline": "./src/primitives/conversation-timeline.tsx",
+    "./primitives/day-separator": "./src/primitives/day-separator.tsx",
+    "./primitives/feedback-comment-input": "./src/primitives/feedback-comment-input.tsx",
+    "./primitives/feedback-rating-selector": "./src/primitives/feedback-rating-selector.tsx",
+    "./primitives/feedback-topic-select": "./src/primitives/feedback-topic-select.tsx",
+    "./primitives/multimodal-input": "./src/primitives/multimodal-input.tsx",
+    "./primitives/router": "./src/primitives/router.tsx",
+    "./primitives/timeline-code-block": "./src/primitives/timeline-code-block.tsx",
+    "./primitives/timeline-command-block": "./src/primitives/timeline-command-block.tsx",
+    "./primitives/timeline-item": "./src/primitives/timeline-item.tsx",
+    "./primitives/timeline-item-attachments": "./src/primitives/timeline-item-attachments.tsx",
+    "./primitives/timeline-item-group": "./src/primitives/timeline-item-group.tsx",
+    "./primitives/timeline-message-layout": "./src/primitives/timeline-message-layout.ts",
+    "./primitives/timeline-read-receipts": "./src/primitives/timeline-read-receipts.tsx",
+    "./primitives/tool-activity-row": "./src/primitives/tool-activity-row.tsx",
+    "./primitives/trigger": "./src/primitives/trigger.tsx",
+    "./primitives/window": "./src/primitives/window.tsx",
+    "./support": "./src/support/index.tsx",
+    "./hooks": "./src/hooks/index.ts",
+    "./hooks/use-create-conversation": "./src/hooks/use-create-conversation.ts",
+    "./hooks/use-feedback-form": "./src/hooks/use-feedback-form.ts",
+    "./hooks/use-file-upload": "./src/hooks/use-file-upload.ts",
+    "./hooks/use-send-message": "./src/hooks/use-send-message.ts",
+    "./hooks/use-submit-feedback": "./src/hooks/use-submit-feedback.ts",
+    "./internal/hooks": "./src/internal/hooks.ts",
+    "./support.css": "./src/support.css",
+    "./styles.css": "./dist/styles.css",
+    "./realtime": "./src/realtime/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./utils/conversation": "./src/utils/conversation.ts",
+    "./utils/id": "./src/utils/id.ts",
+    "./utils/merge-refs": "./src/utils/merge-refs.ts",
+    "./utils/use-render-element": "./src/utils/use-render-element.tsx",
+    "./identify-visitor": "./src/identify-visitor.tsx",
+    "./provider": "./src/provider.tsx",
+    "./support-config": "./src/support-config.tsx"
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@cossistant/core": "workspace:*",
+    "@cossistant/tiny-markdown": "workspace:*",
+    "@cossistant/types": "workspace:*",
+    "facehash": "workspace:*",
+    "@floating-ui/react": "^0.27.16",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "nanoid": "^5.1.5",
+    "tailwind-merge": "^3.3.1",
+    "ulid": "^3.0.1"
+  },
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/react-dom": "^19.2.2",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20",
+    "@types/react": "",
+    "tailwindcss": "*"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    },
+    "tailwindcss": {
+      "optional": true
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "scripts": {
+    "build": "tsdown && bun run rewrite:types && rm -rf dist/node_modules dist/packages && find dist -name '*.map' -delete && bun run build:css && bun run prepare-package",
+    "build:css": "bunx @tailwindcss/cli -i src/styles.css -o dist/styles.css --content 'src/**/*.{js,ts,jsx,tsx}' --minify && mkdir -p dist/support && cp src/support.css dist/support.css && cp src/support/support.css dist/support/support.css && cp src/support/animations.css dist/support/animations.css",
+    "check:pack": "bun scripts/check-package-output.ts",
+    "prepare-package": "bun ../../scripts/prepare-package.ts",
+    "rewrite:types": "bun scripts/rewrite-dist-types.ts",
+    "pub:release": "bun run build && npm publish --access public",
+    "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
+    "pub:next": "bun run build && npm publish --access public --tag next --no-git-checks",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "name": "@cossistant/next",
+  "type": "module",
+  "version": "0.2.0",
+  "private": false,
+  "author": "Cossistant team",
+  "description": "Next.js-ready SDK for building AI-powered support/chat widgets. Hooks + primitives, WS-driven, TypeScript-first. Next.js-ready, Tailwind optional.",
+  "keywords": [
+    "nextjs",
+    "react",
+    "headless-ui",
+    "support-widget",
+    "chat-widget",
+    "customer-support",
+    "helpdesk",
+    "live-chat",
+    "ai-support",
+    "websocket",
+    "typescript",
+    "tailwind",
+    "accessibility"
+  ],
+  "bugs": {
+    "url": "https://github.com/cossistantcom/cossistant/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cossistantcom/cossistant.git",
+    "directory": "packages/next"
+  },
+  "license": "MIT",
+  "homepage": "https://cossistant.com",
+  "exports": {
+    ".": "./src/index.ts",
+    "./feedback": "./src/feedback/index.tsx",
+    "./primitives": "./src/primitives/index.ts",
+    "./support": "./src/support/index.tsx",
+    "./hooks": "./src/hooks/index.ts",
+    "./support.css": "./src/support.css",
+    "./styles.css": "./src/styles.css",
+    "./realtime": "./src/realtime/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./identify-visitor": "./src/identify-visitor.tsx",
+    "./provider": "./src/provider.tsx",
+    "./support-config": "./src/support-config.tsx"
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "dependencies": {
+    "@cossistant/react": "workspace:*"
+  },
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20",
+    "next": ">=13.5.2 || ^14.0.0 || ^15.0.0 || ^16.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "scripts": {
+    "build": "tsdown && rm -rf dist/node_modules dist/packages && find dist -name '*.map' -delete && bun run build:css && bun run prepare-package",
+    "build:css": "mkdir -p dist && cp src/support.css dist/support.css && cp src/styles.css dist/styles.css",
+    "pub:release": "bun run build && npm publish --access public",
+    "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
+    "pub:next": "bun run build && npm publish --access public --tag next --no-git-checks",
+    "prepare-package": "bun ../../scripts/prepare-package.ts",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
+  }
+}

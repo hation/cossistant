@@ -1,0 +1,69 @@
+{
+  "name": "@cossistant/core",
+  "type": "module",
+  "version": "0.2.0",
+  "private": false,
+  "author": "Cossistant Team",
+  "description": "Core library for connecting to Cossistant API and managing data fetching",
+  "keywords": [
+    "api",
+    "websocket",
+    "rest",
+    "core",
+    "typescript",
+    "support-ai"
+  ],
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./human-agent-display": "./src/human-agent-display.ts",
+    "./locale-utils": "./src/locale-utils.ts",
+    "./realtime-client": "./src/realtime-client.ts",
+    "./realtime-event-filter": "./src/realtime-event-filter.ts",
+    "./resolve-public-key": "./src/resolve-public-key.ts",
+    "./support-config": "./src/support-config.ts",
+    "./support-runtime": "./src/support-runtime.ts",
+    "./store/conversations-store": "./src/store/conversations-store.ts",
+    "./store/processing-store": "./src/store/processing-store.ts",
+    "./store/seen-store": "./src/store/seen-store.ts",
+    "./store/support-state-store": "./src/store/support-state-store.ts",
+    "./store/support-store": "./src/store/support-store.ts",
+    "./store/typing-store": "./src/store/typing-store.ts",
+    "./store/website-store": "./src/store/website-store.ts",
+    "./support-controller": "./src/support-controller.ts",
+    "./types": "./src/types.ts",
+    "./upload-constants": "./src/upload-constants.ts",
+    "./utils": "./src/utils.ts"
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "devDependencies": {
+    "@cossistant/typescript-config": "workspace:*",
+    "@cossistant/types": "workspace:*"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^1.1.0",
+    "nanoid": "^5.1.5",
+    "ulid": "^3.0.1",
+    "zod": "^4.1.8"
+  },
+  "scripts": {
+    "build": "tsdown && bun run prepare-package",
+    "prepare-package": "bun ../../scripts/prepare-package.ts",
+    "pub:release": "bun run build && npm publish --access public",
+    "pub:beta": "bun run build && npm publish --access public --tag beta --no-git-checks",
+    "pub:next": "bun run build && npm publish --access public --tag next --no-git-checks",
+    "lint": "biome check .",
+    "check-types": "tsc --noEmit --project tsconfig.json"
+  }
+}

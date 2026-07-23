@@ -1,0 +1,173 @@
+---
+title: Contacts
+description: Identified visitors with metadata and cross-device conversation history.
+---
+
+## What are Contacts?
+
+**Contacts** are identified [visitors](/docs/concepts). When you identify an anonymous visitor with an `externalId` (your user ID) or `email`, they become a contact.
+
+Contacts enable:
+
+- **Cross-device support**: Same user on desktop, mobile, or a reinstalled app shares conversation history
+- **Rich metadata**: Attach context like plan type, MRR, company, or lifecycle stage
+- **Dashboard visibility**: Support agents see user details alongside conversations
+- **Persistent identity**: Conversations follow the user, not the device
+
+## Creating Contacts
+
+### Identification Requirements
+
+A contact requires **at least one** of:
+
+- `externalId`: Your internal user ID (recommended)
+- `email`: User's email address
+
+Both are accepted, but `externalId` is preferred for robust cross-system tracking. Use a stable ID from your own user table, such as `user.id`, so Cossistant can recognize the same person after browser storage is cleared, an app is reinstalled, or the user signs in on another device.
+
+### Using the Component
+
+```tsx showLineNumbers title="app/dashboard/layout.tsx"
+import { IdentifySupportVisitor } from "@cossistant/next";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+
+export default async function DashboardLayout({ children }) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  return (
+    <div>
+      {session?.user && (
+        <IdentifySupportVisitor
+          externalId={session.user.id}
+          email={session.user.email}
+          name={session.user.name}
+          image={session.user.image}
+          metadata={{
+            plan: session.user.plan,
+            signupDate: session.user.createdAt,
+            company: session.user.company,
+            mrr: session.user.mrr,
+          }}
+        />
+      )}
+      {children}
+    </div>
+  );
+}
+```
+
+### Using the Hook
+
+```tsx showLineNumbers title="components/auth-handler.tsx"
+"use client";
+
+import { useVisitor } from "@cossistant/next";
+import { useEffect } from "react";
+
+export function AuthHandler({ user }) {
+  const { visitor, identify } = useVisitor();
+
+  useEffect(() => {
+    if (user && !visitor?.contact) {
+      identify({
+        externalId: user.id,
+        email: user.email,
+        name: user.name,
+        image: user.avatar,
+        metadata: {
+          plan: user.plan,
+          signupDate: user.createdAt,
+        },
+      });
+    }
+  }, [user, visitor?.contact, identify]);
+
+  return null;
+}
+```
+
+## Contact Metadata
+
+Metadata provides context to support agents during conversations. It appears in your dashboard alongside chat threads.
+
+### What to Include
+
+Common metadata fields:
+
+- **plan**: Subscription tier (free, pro, enterprise)
+- **signupDate**: When the user joined
+- **company**: Organization name
+- **mrr**: Monthly recurring revenue
+- **lifecycleStage**: lead, trial, customer, churned
+- **lastActive**: Last activity timestamp
+
+### Metadata Schema
+
+```typescript
+type VisitorMetadata = Record<string, string | number | boolean | null>;
+```
+
+Only primitive values are supported—no nested objects or arrays.
+
+### Updating Metadata
+
+Metadata can be updated anytime to reflect user changes:
+
+```tsx showLineNumbers title="components/upgrade-button.tsx"
+"use client";
+
+import { useVisitor } from "@cossistant/next";
+
+export function UpgradeButton() {
+  const { setVisitorMetadata } = useVisitor();
+
+  const handleUpgrade = async () => {
+    await upgradeToPro();
+
+    // Update metadata so agents see the new plan
+    await setVisitorMetadata({
+      plan: "pro",
+      upgradedAt: new Date().toISOString(),
+      mrr: 99,
+    });
+  };
+
+  return <button onClick={handleUpgrade}>Upgrade to Pro</button>;
+}
+```
+
+## Efficient Metadata Updates
+
+Cossistant **hashes metadata** before sending updates. If metadata hasn't changed, no API call is made—preventing unnecessary network requests and database writes.
+
+This means you can safely call `setVisitorMetadata()` or re-render `<IdentifySupportVisitor />` without performance concerns.
+
+## One Contact, Multiple Visitors
+
+A single contact can have multiple [visitors](/docs/concepts) associated with it:
+
+- **Desktop visitor**: User on their laptop
+- **Mobile visitor**: Same user on their phone
+- **Tablet visitor**: Same user on their iPad
+
+All three visitors share:
+
+- Conversation history
+- Contact metadata
+- Support context
+
+This also covers storage-loss cases. If a user reinstalls your app or loses browser storage, Cossistant may create a new visitor at first. As soon as you identify that visitor with the same `externalId` or email, Cossistant links them to the existing contact and restores access to that contact's prior conversations.
+
+You do not need to persist Cossistant's visitor ID in your own user records for identified users. Store and send your stable `externalId` instead. Anonymous visitors remain scoped to the current device/browser storage until they are identified.
+
+This provides seamless support across devices and reinstalls - agents see the full picture regardless of where the user reaches out.
+
+## Learn More
+
+- **[Visitors](/docs/concepts)**: Anonymous users before identification
+- **[IdentifySupportVisitor](/docs/support-component#identifying-visitors)**: Component for creating contacts
+- **[useVisitor](/docs/support-component/hooks#usevisitor)**: Hook for programmatic contact management
+- **[Conversations](/docs/concepts/conversations)**: Chat threads associated with contacts
