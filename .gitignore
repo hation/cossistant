@@ -52,3 +52,6 @@ terraform.tfstate
 terraform.tfstate.*
 crash.log
 *.tfplan
+
+# Unscripted / UA temporary files
+.ua/

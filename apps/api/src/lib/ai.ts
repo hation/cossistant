@@ -18,6 +18,7 @@
 
 import { devToolsMiddleware } from "@ai-sdk/devtools";
 import { createOpenAI } from "@ai-sdk/openai";
+import type { LanguageModelV3Prompt } from "@ai-sdk/provider";
 import { env } from "@api/env";
 import {
 	normalizeOpenRouterByokErrorCode,
@@ -35,6 +36,7 @@ import {
 	embed,
 	embedMany,
 	type LanguageModel,
+	type LanguageModelMiddleware,
 	wrapLanguageModel,
 } from "ai";
 
@@ -68,7 +70,9 @@ const isDevToolsEnabled = env.NODE_ENV === "development";
  * AI provider type — both OpenRouter and OpenAI-compatible providers expose
  * compatible `.chat(modelId)` and `.textEmbeddingModel(modelId)` methods.
  */
-type AiProvider = ReturnType<typeof createOpenRouter> | ReturnType<typeof createOpenAI>;
+type AiProvider =
+	| ReturnType<typeof createOpenRouter>
+	| ReturnType<typeof createOpenAI>;
 
 /**
  * Default AI provider instance (lazy-initialized)
@@ -191,14 +195,132 @@ function wrapWithOptionalDevTools(
 	model: WrappableLanguageModel,
 	devTools: boolean
 ): WrappableLanguageModel {
-	if (!devTools) {
+	const middlewares: LanguageModelMiddleware[] = [];
+
+	// Volcano Engine (方舟/Ark) requires the word "json" in the prompt when
+	// using structured (json_schema) output. Apply this only for the
+	// openai-compatible provider (which is what 方舟 uses).
+	if (env.AI_PROVIDER === "openai-compatible") {
+		middlewares.push(buildVolcanoJsonHintMiddleware());
+	}
+
+	if (devTools) {
+		middlewares.push(devToolsMiddleware());
+	}
+
+	if (middlewares.length === 0) {
 		return model;
 	}
 
 	return wrapLanguageModel({
 		model,
-		middleware: devToolsMiddleware(),
+		middleware: middlewares,
 	});
+}
+
+/**
+ * Volcano Engine (方舟/Ark) requires the prompt to contain the word "json"
+ * whenever `response_format` of type `json_schema`/`json_object` is used.
+ * Without it, the provider rejects the request with:
+ *   'messages' must contain the word 'json' in some form, to use 'response_format' of type 'json_schema'
+ *
+ * Additionally, 方舟's DeepSeek models behave unreliably with
+ * `response_format: json_schema` (the returned object frequently does not
+ * match the supplied schema), while `json_object` mode works correctly.
+ *
+ * This middleware:
+ *  1. Injects a "Respond in JSON." instruction into the prompt (satisfies the
+ *     "must contain json" requirement).
+ *  2. Serializes the schema into the prompt so the model knows the expected
+ *     fields even without the provider-side schema enforcement.
+ *  3. Strips `responseFormat.schema`, which makes the AI SDK fall back to
+ *     `response_format: json_object` (reliable on 方舟).
+ */
+const VOLCANO_JSON_HINT =
+	"Respond in JSON format. Your entire reply must be valid JSON.";
+
+function buildVolcanoJsonHintMiddleware(): LanguageModelMiddleware {
+	return {
+		transformParams: async ({ params }) => {
+			if (
+				env.AI_PROVIDER !== "openai-compatible" ||
+				params.responseFormat?.type !== "json"
+			) {
+				return params;
+			}
+
+			const prompt = params.prompt as LanguageModelV3Prompt | undefined;
+			if (!prompt || prompt.length === 0) {
+				return params;
+			}
+
+			let hint = VOLCANO_JSON_HINT;
+
+			// Serialize the schema into the prompt so the model knows the
+			// expected output fields (schema enforcement is stripped below).
+			if (params.responseFormat.schema != null) {
+				hint += `\n\nHere is the exact JSON schema your output MUST conform to:\n${JSON.stringify(
+					params.responseFormat.schema
+				)}`;
+			}
+
+			// Check whether the word "json" already appears anywhere in the prompt.
+			const alreadyHinted = prompt.some((message) => {
+				if (typeof (message as { content?: unknown }).content === "string") {
+					return /json/i.test((message as { content: string }).content);
+				}
+				return false;
+			});
+
+			const nextPrompt = prompt.map((message) => ({ ...message }));
+
+			if (!alreadyHinted) {
+				// Append the hint to the system message if present, otherwise to the first message.
+				const systemIndex = nextPrompt.findIndex(
+					(message) => (message as { role?: string }).role === "system"
+				);
+
+				if (systemIndex >= 0) {
+					const systemMessage = nextPrompt[systemIndex] as {
+						role: "system";
+						content: string;
+					};
+					nextPrompt[systemIndex] = {
+						...systemMessage,
+						content: `${systemMessage.content}\n\n${hint}`,
+					};
+				} else {
+					const firstMessage = nextPrompt[0];
+					if (firstMessage && firstMessage.role === "user") {
+						const content = (
+							firstMessage as {
+								content: string | Array<{ type: string; text?: string }>;
+							}
+						).content;
+						if (typeof content === "string") {
+							(firstMessage as { content: string }).content =
+								`${content}\n\n${hint}`;
+						} else if (Array.isArray(content)) {
+							content.push({
+								type: "text",
+								text: `\n\n${hint}`,
+							});
+						}
+					}
+				}
+			}
+
+			return {
+				...params,
+				// Strip the schema so the AI SDK uses `response_format:
+				// json_object` (reliable on 方舟) instead of `json_schema`.
+				responseFormat: {
+					type: "json",
+				},
+				prompt: nextPrompt,
+			};
+		},
+	};
 }
 
 function isAbortError(error: unknown): boolean {
@@ -561,7 +683,10 @@ export async function createModelRawForWebsite(
 function createEmbeddingModel(modelId?: string) {
 	const provider = getProvider();
 	return provider.textEmbeddingModel(
-		modelId ?? env.AI_MODEL_EMBEDDING ?? env.OPENROUTER_EMBEDDING_MODEL ?? "openai/text-embedding-3-small"
+		modelId ??
+			env.AI_MODEL_EMBEDDING ??
+			env.OPENROUTER_EMBEDDING_MODEL ??
+			"openai/text-embedding-3-small"
 	);
 }
 
@@ -629,7 +754,8 @@ export const Models = {
 	Cheap: env.AI_MODEL_FAST || "openai/gpt-4o-mini",
 
 	// Embedding models
-	TextEmbedding3Small: env.AI_MODEL_EMBEDDING || "openai/text-embedding-3-small",
+	TextEmbedding3Small:
+		env.AI_MODEL_EMBEDDING || "openai/text-embedding-3-small",
 	TextEmbedding3Large: "openai/text-embedding-3-large",
 } as const;
 

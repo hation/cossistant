@@ -37,8 +37,8 @@ export type AiAgentModelCatalogItem = {
  */
 export const AI_AGENT_MODEL_CATALOG: readonly AiAgentModelCatalogItem[] = [
 	{
-		id: "deepseek-v4-pro",
-		label: "DeepSeek V4 Pro",
+		id: "deepseek-v4-flash-260425",
+		label: "DeepSeek V4 Flash",
 		provider: "DeepSeek",
 		icon: "agent",
 		requiresLatestModels: false,

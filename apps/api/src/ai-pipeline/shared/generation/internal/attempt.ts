@@ -2,6 +2,8 @@ import {
 	createModel,
 	hasToolCall,
 	type ModelMessage,
+	OpenRouterByokFallbackRequiredError,
+	runWithOpenRouterByokFallback,
 	stepCountIs,
 	ToolLoopAgent,
 	type ToolSet,
@@ -15,6 +17,8 @@ import {
 	type AiCreditGuardResult,
 	guardAiCreditRun,
 } from "@api/lib/ai-credits/guard";
+import type { OpenRouterBillingSource } from "@api/lib/openrouter-byok/resolver";
+import { recordOpenRouterByokFailure } from "@api/lib/openrouter-byok/resolver";
 import type { PrepareStepFunction } from "ai";
 import { logAiPipeline } from "../../../logger";
 import { emitPipelineGenerationProgress } from "../../events";
@@ -170,8 +174,6 @@ function toThinkingResult(
 	};
 }
 
-
-
 export async function runGenerationAttempt(params: {
 	input: GenerationRuntimeInput;
 	attempt: number;
@@ -266,7 +268,7 @@ export async function runGenerationAttempt(params: {
 			countNonFinishToolCalls({
 				steps: input.steps,
 				finishToolNames: finishToolNameSet,
-			}) >= params.nonFinishToolBudget,
+			}) > params.nonFinishToolBudget,
 		stepCountIs(params.nonFinishToolBudget + STOP_STEP_BUFFER),
 	];
 
@@ -310,6 +312,7 @@ export async function runGenerationAttempt(params: {
 
 	const deepTraceEnabled = params.input.deepTraceEnabled === true;
 	let creditGuardMode: AiCreditGuardResult["mode"] | undefined;
+	let billingSource: OpenRouterBillingSource = "cossistant";
 
 	if (deepTraceEnabled) {
 		emitGenerationDebugLog(
@@ -339,70 +342,108 @@ export async function runGenerationAttempt(params: {
 			);
 		});
 
-		// Run AI credit guard first
-		if (params.input.pipelineKind === "primary") {
-			const guardResult = await guardAiCreditRun({
-				organizationId: params.input.conversation.organizationId,
-				modelId: params.modelId,
-				aiThinkingEnabled: thinkingConfig.enabled,
-			});
+		const byokContext = {
+			db: params.input.db,
+			organizationId: params.input.conversation.organizationId,
+			websiteId: params.input.conversation.websiteId,
+		};
 
-			if (!guardResult.allowed) {
-				throw new AiCreditGuardBlockedError(guardResult);
-			}
+		const byokRetry = params.input.openRouterByokRetry;
+		const byokMode =
+			byokRetry?.mode === "cossistant"
+				? "cossistant_platform"
+				: byokRetry?.mode === "customer"
+					? "customer"
+					: "auto";
 
-			creditGuardMode = guardResult.mode;
-		}
+		const generationResult = await runWithOpenRouterByokFallback({
+			modelId: params.modelId,
+			options: {
+				context: byokContext,
+				openRouterByokMode: byokMode,
+			},
+			fallbackStrategy: "throw",
+			isLocalAbort: (error) =>
+				error instanceof Error && error.name === "AbortError",
+			operation: async (resolution) => {
+				billingSource = resolution.billingSource;
 
-		// Create model directly using createModel
-		const model = createModel(params.modelId);
-		const agent = new ToolLoopAgent({
-			model,
-			instructions: params.systemPrompt,
-			tools: params.toolsetResolution.tools,
-			prepareStep,
-			toolChoice: "required",
-			stopWhen,
-			temperature: 0,
-			maxOutputTokens,
-			providerOptions: thinkingConfig.providerOptions,
-		});
+				if (
+					params.input.pipelineKind === "primary" &&
+					billingSource !== "customer_openrouter" &&
+					billingSource !== "cossistant_platform"
+				) {
+					const guardResult = await guardAiCreditRun({
+						organizationId: params.input.conversation.organizationId,
+						modelId: params.modelId,
+						aiThinkingEnabled: thinkingConfig.enabled,
+					});
 
-		const result = await agent.generate({
-			messages: params.messages,
-			abortSignal: generationAbortController.signal,
-		});
-		const usage = toUsage(result.usage);
-		const reasoningText = getReasoningText(result);
-		const thinkingCaptureStatus = thinkingConfig.enabled
-			? reasoningText
-				? "captured"
-				: "not_returned"
-			: "not_requested";
-		if (thinkingConfig.enabled) {
-			await logAiThinkingTraceTimeline({
-				db: params.input.db,
-				input: params.input,
-				modelId: params.modelId,
-				attempt: params.attempt,
-				thinkingCredits: thinkingConfig.thinkingCredits,
-				reasoningMaxTokens: thinkingConfig.reasoningMaxTokens,
-				reasoningText,
-				usage,
-			}).catch((error) => {
-				logAiPipeline({
-					area: "generation",
-					event: "thinking_trace_failed",
-					level: "warn",
-					conversationId: params.input.conversation.id,
-					fields: {
-						attempt: params.attempt,
-						model: params.modelId,
-					},
-					error,
+					if (!guardResult.allowed) {
+						throw new AiCreditGuardBlockedError(guardResult);
+					}
+
+					creditGuardMode = guardResult.mode;
+				}
+
+				const agent = new ToolLoopAgent({
+					model: resolution.model,
+					instructions: params.systemPrompt,
+					tools: params.toolsetResolution.tools,
+					prepareStep,
+					toolChoice: "auto",
+					stopWhen,
+					temperature: 0,
+					maxOutputTokens,
+					providerOptions: thinkingConfig.providerOptions,
 				});
-			});
-		}
+
+				const agentResult = await agent.generate({
+					messages: params.messages,
+					abortSignal: generationAbortController.signal,
+				});
+				const agentUsage = toUsage(agentResult.usage);
+				const reasoningText = getReasoningText(agentResult);
+				const innerThinkingCaptureStatus = thinkingConfig.enabled
+					? reasoningText
+						? "captured"
+						: "not_returned"
+					: "not_requested";
+				if (thinkingConfig.enabled) {
+					await logAiThinkingTraceTimeline({
+						db: params.input.db,
+						input: params.input,
+						modelId: params.modelId,
+						attempt: params.attempt,
+						thinkingCredits: thinkingConfig.thinkingCredits,
+						reasoningMaxTokens: thinkingConfig.reasoningMaxTokens,
+						reasoningText,
+						usage: agentUsage,
+					}).catch((error) => {
+						logAiPipeline({
+							area: "generation",
+							event: "thinking_trace_failed",
+							level: "warn",
+							conversationId: params.input.conversation.id,
+							fields: {
+								attempt: params.attempt,
+								model: params.modelId,
+							},
+							error,
+						});
+					});
+				}
+
+				return {
+					result: agentResult,
+					usage: agentUsage,
+					thinkingCaptureStatus: innerThinkingCaptureStatus,
+				};
+			},
+		});
+
+		const { result, usage, thinkingCaptureStatus } = generationResult.result;
+		billingSource = generationResult.billingSource;
 
 		await emitPipelineGenerationProgress({
 			conversation: params.input.conversation,
@@ -479,6 +520,24 @@ export async function runGenerationAttempt(params: {
 				},
 			});
 
+			if (params.runtimeState.publicMessagesSent > 0) {
+				return {
+					status: "completed",
+					action: buildSafeSkipAction(
+						"Generation completed without finish action (fallback)"
+					),
+					publicMessagesSent: params.runtimeState.publicMessagesSent,
+					toolCallsByName,
+					mutationToolCallsByName,
+					chargeableToolCallsByName,
+					toolExecutions,
+					totalToolCalls,
+					usage,
+					thinking: toThinkingResult(thinkingConfig, thinkingCaptureStatus),
+					creditGuardMode,
+				};
+			}
+
 			return {
 				status: "error",
 				action: buildSafeSkipAction("Generation missing finish action"),
@@ -515,6 +574,7 @@ export async function runGenerationAttempt(params: {
 			totalToolCalls,
 			usage,
 			thinking: toThinkingResult(thinkingConfig, thinkingCaptureStatus),
+			billingSource,
 			creditGuardMode,
 		};
 	} catch (error) {
@@ -547,6 +607,7 @@ export async function runGenerationAttempt(params: {
 				chargeableToolCallsByName,
 				toolExecutions,
 				totalToolCalls,
+				billingSource,
 				creditGuard: error.guardResult,
 				creditGuardMode: error.guardResult.mode,
 			};
@@ -618,7 +679,64 @@ export async function runGenerationAttempt(params: {
 				chargeableToolCallsByName,
 				toolExecutions,
 				totalToolCalls,
+				billingSource,
 				creditGuardMode,
+			};
+		}
+
+		if (error instanceof OpenRouterByokFallbackRequiredError) {
+			recordAttempt({
+				attempts: params.attempts,
+				modelId: params.modelId,
+				attempt: params.attempt,
+				outcome: "error",
+				durationMs,
+			});
+
+			const currentRetry = params.input.openRouterByokRetry;
+			const currentCount = currentRetry?.customerFailureCount ?? 0;
+			const nextMode = currentCount >= 1 ? "cossistant" : "customer";
+			const openRouterByokRetry = {
+				mode: nextMode,
+				customerFailureCount: currentCount + 1,
+				lastErrorCode: error.errorCode,
+				lastFailedAt: new Date().toISOString(),
+			};
+
+			if (currentCount >= 1 && !error.alreadyRecorded) {
+				await recordOpenRouterByokFailure({
+					context: {
+						db: params.input.db,
+						organizationId: params.input.conversation.organizationId,
+						websiteId: params.input.conversation.websiteId,
+					},
+					billingSource: error.billingSource,
+					errorCode: error.errorCode,
+					sendAlert: true,
+					pauseFallback: true,
+				});
+			}
+
+			return {
+				status: "error",
+				action: buildSafeSkipAction("OpenRouter BYOK fallback required"),
+				error: error.message,
+				failureCode: "openrouter_byok_retry_required",
+				publicMessagesSent: params.runtimeState.publicMessagesSent,
+				toolCallsByName,
+				mutationToolCallsByName,
+				chargeableToolCallsByName,
+				toolExecutions,
+				totalToolCalls,
+				billingSource: error.billingSource,
+				creditGuardMode,
+				openRouterByokRetry,
+				openRouterByokFailure: {
+					errorCode: error.errorCode,
+					billingSource: error.billingSource,
+					fallbackEligible: error.fallbackEligible,
+					localAbort: false,
+				},
 			};
 		}
 

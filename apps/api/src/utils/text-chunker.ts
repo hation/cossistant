@@ -200,10 +200,12 @@ export function extractTextFromKnowledgePayload(
 			return `Q: ${question ?? ""}\n\nA: ${answer ?? ""}`;
 		}
 		case "article": {
-			// Article has title and content (markdown)
+			// Article has title and markdown body
 			const title = data.title as string | undefined;
+			const markdown = data.markdown as string | undefined;
 			const content = data.content as string | undefined;
-			return title ? `# ${title}\n\n${content ?? ""}` : (content ?? "");
+			const body = markdown ?? content ?? "";
+			return title ? `# ${title}\n\n${body}` : body;
 		}
 		default:
 			return "";

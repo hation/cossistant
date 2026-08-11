@@ -19,7 +19,8 @@ import { type Job, Worker } from "bullmq";
 import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 
 // Batch size for embedding generation (to avoid hitting API limits)
-const EMBEDDING_BATCH_SIZE = 20;
+// Volcengine Ark embeddings API caps each request at 10 inputs.
+const EMBEDDING_BATCH_SIZE = 10;
 
 const WORKER_CONFIG = {
 	concurrency: 1,

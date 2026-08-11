@@ -1,3 +1,4 @@
+import type { OpenRouterBillingSource } from "@api/lib/openrouter-byok/resolver";
 import {
 	AI_AGENT_TOOL_CATALOG,
 	type AiAgentToolId,
@@ -419,6 +420,8 @@ export async function runGenerationRuntime(
 		allowedToolNames: input.toolAllowlist,
 	});
 
+	const billingSource: OpenRouterBillingSource = "cossistant";
+
 	if (baseToolsetResolution.toolNames.length === 0) {
 		return {
 			status: "completed",
@@ -428,6 +431,7 @@ export async function runGenerationRuntime(
 			mutationToolCallsByName: runtimeState.mutationToolCallCounts,
 			chargeableToolCallsByName: runtimeState.chargeableToolCallCounts,
 			totalToolCalls: 0,
+			billingSource,
 			attempts: [],
 		};
 	}
@@ -441,6 +445,7 @@ export async function runGenerationRuntime(
 			mutationToolCallsByName: runtimeState.mutationToolCallCounts,
 			chargeableToolCallsByName: runtimeState.chargeableToolCallCounts,
 			totalToolCalls: 0,
+			billingSource,
 			attempts: [],
 		};
 	}
@@ -475,6 +480,7 @@ export async function runGenerationRuntime(
 			mutationToolCallsByName: runtimeState.mutationToolCallCounts,
 			chargeableToolCallsByName: runtimeState.chargeableToolCallCounts,
 			totalToolCalls: countTotalToolCalls(runtimeState.toolCallCounts),
+			billingSource,
 			attempts: [],
 		};
 	}
@@ -543,6 +549,7 @@ export async function runGenerationRuntime(
 					chargeableToolCallsByName: runtimeState.chargeableToolCallCounts,
 					toolExecutions: runtimeState.toolExecutions,
 					totalToolCalls: countTotalToolCalls(runtimeState.toolCallCounts),
+					billingSource,
 					attempts,
 				};
 			}
@@ -588,6 +595,7 @@ export async function runGenerationRuntime(
 				chargeableToolCallsByName: runtimeState.chargeableToolCallCounts,
 				toolExecutions: runtimeState.toolExecutions,
 				totalToolCalls: countTotalToolCalls(runtimeState.toolCallCounts),
+				billingSource,
 				attempts,
 			};
 		}
@@ -645,6 +653,7 @@ export async function runGenerationRuntime(
 				chargeableToolCallsByName: runtimeState.chargeableToolCallCounts,
 				toolExecutions: runtimeState.toolExecutions,
 				totalToolCalls: countTotalToolCalls(runtimeState.toolCallCounts),
+				billingSource,
 				attempts,
 			};
 		}

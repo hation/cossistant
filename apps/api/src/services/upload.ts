@@ -22,15 +22,23 @@ const forcePathStyle = env.S3_FORCE_PATH_STYLE;
 const cdnBaseUrl = env.S3_CDN_BASE_URL.trim();
 const publicBaseUrl = env.S3_PUBLIC_BASE_URL.trim();
 
-export const s3Client = new S3Client({
-	region: env.S3_REGION,
-	credentials: {
-		accessKeyId: env.S3_ACCESS_KEY_ID,
-		secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-	},
-	endpoint,
-	forcePathStyle,
-});
+const s3Credentials =
+	env.S3_ACCESS_KEY_ID.trim().length > 0 &&
+	env.S3_SECRET_ACCESS_KEY.trim().length > 0
+		? {
+				accessKeyId: env.S3_ACCESS_KEY_ID,
+				secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+			}
+		: undefined;
+
+export const s3Client = s3Credentials
+	? new S3Client({
+			region: env.S3_REGION,
+			credentials: s3Credentials,
+			endpoint,
+			forcePathStyle,
+		})
+	: undefined;
 
 function sanitizeSegmentsFromInput(input: string | undefined): string[] {
 	if (!input) {
@@ -188,6 +196,12 @@ function buildScopeBaseSegments(scope: UploadScope, useCdn: boolean): string[] {
 export async function generateUploadUrl(
 	options: GenerateUploadUrlOptions
 ): Promise<GenerateUploadUrlResult> {
+	if (!s3Client) {
+		throw new Error(
+			"S3 is not configured. Please set S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY."
+		);
+	}
+
 	const useCdn = Boolean(options.useCdn);
 	const baseSegments = buildScopeBaseSegments(options.scope, useCdn);
 	const normalizedPathSegments = sanitizeSegmentsFromInput(options.path);
@@ -234,6 +248,12 @@ export async function generateUploadUrl(
 }
 
 async function deleteByPrefix(prefix: string): Promise<number> {
+	if (!s3Client) {
+		throw new Error(
+			"S3 is not configured. Please set S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY."
+		);
+	}
+
 	let continuationToken: string | undefined;
 	let deletedCount = 0;
 
@@ -271,6 +291,12 @@ async function deleteByPrefix(prefix: string): Promise<number> {
 }
 
 async function calculateSizeByPrefix(prefix: string): Promise<number> {
+	if (!s3Client) {
+		throw new Error(
+			"S3 is not configured. Please set S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY."
+		);
+	}
+
 	let continuationToken: string | undefined;
 	let totalSize = 0;
 

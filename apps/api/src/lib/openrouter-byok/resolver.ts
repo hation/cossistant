@@ -88,6 +88,16 @@ export function normalizeOpenRouterByokErrorCode(error: unknown): string {
 }
 
 function getCossistantOpenRouterKey(): string {
+	if (env.AI_PROVIDER === "openai-compatible") {
+		if (!env.OPENAI_API_KEY) {
+			throw new OpenRouterByokError(
+				"missing_cossistant_key",
+				"OPENAI_API_KEY is not configured. Please set it in your environment variables."
+			);
+		}
+		return env.OPENAI_API_KEY;
+	}
+
 	if (!env.OPENROUTER_API_KEY) {
 		throw new OpenRouterByokError(
 			"missing_cossistant_key",

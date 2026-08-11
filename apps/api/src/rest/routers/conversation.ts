@@ -254,9 +254,9 @@ function canonicalizeForStableStringify(value: unknown): unknown {
 
 type DefaultTimelineItemIdSource = {
 	type?: TimelineItemCreateInput["type"];
-	text: TimelineItemCreateInput["text"];
+	text?: TimelineItemCreateInput["text"];
 	parts?: TimelineItemCreateInput["parts"];
-	visibility: TimelineItemCreateInput["visibility"];
+	visibility?: TimelineItemCreateInput["visibility"];
 	userId?: string | null;
 	aiAgentId?: string | null;
 	visitorId?: string | null;
@@ -1038,7 +1038,9 @@ conversationRouter.openapi(
 		}
 
 		const lastTimelineItem =
-			createdItems.at(-1) ?? header?.lastTimelineItem ?? undefined;
+			createdItems[createdItems.length - 1] ??
+			header?.lastTimelineItem ??
+			undefined;
 
 		const response = {
 			initialTimelineItems: createdItems.map(serializeTimelineItemForResponse),

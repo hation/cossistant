@@ -1,8 +1,4 @@
-import {
-	generateText,
-	Output,
-	createModel,
-} from "@api/lib/ai";
+import { createModel, generateText, Output } from "@api/lib/ai";
 import { z } from "zod";
 import { logAiPipeline } from "../../../../logger";
 import { observeDecision } from "./rules";
@@ -13,7 +9,7 @@ import type {
 } from "./types";
 
 const DECISION_MODELS: readonly SmartDecisionModelConfig[] = [
-	{ id: "deepseek-v4-pro", timeoutMs: 8000 },
+	{ id: "deepseek-v4-flash-260425", timeoutMs: 30_000 },
 ];
 
 const decisionOutputSchema = z.object({

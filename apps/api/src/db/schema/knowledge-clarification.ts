@@ -88,7 +88,7 @@ export const knowledgeClarificationRequest = pgTable(
 		topicSummary: text("topic_summary").notNull(),
 		sourceTriggerMessageId: text("source_trigger_message_id"),
 		topicFingerprint: varchar("topic_fingerprint", { length: 32 }),
-		topicEmbedding: vector("topic_embedding", { dimensions: 1536 }),
+		topicEmbedding: vector("topic_embedding", { dimensions: 2048 }),
 		stepIndex: integer("step_index").notNull().default(0),
 		maxSteps: integer("max_steps").notNull().default(3),
 		contextSnapshot:

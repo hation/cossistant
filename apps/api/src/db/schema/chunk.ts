@@ -61,8 +61,8 @@ export const chunk = pgTable(
 		sourceType: text("source_type").notNull(),
 		// The actual chunk content
 		content: text("content").notNull(),
-		// OpenAI text-embedding-3-small produces 1536-dimensional vectors
-		embedding: vector("embedding", { dimensions: 1536 }),
+		// doubao-embedding-vision produces 2048-dimensional vectors
+		embedding: vector("embedding", { dimensions: 2048 }),
 		// Chunk position in original document
 		chunkIndex: integer("chunk_index"),
 		// Additional metadata (title, url, etc.)

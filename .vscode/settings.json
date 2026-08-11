@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["cossistant", "Facehash"]
+  "cSpell.words": ["cossistant", "Facehash"],
+  "markdown.validate.enabled": true
 }
