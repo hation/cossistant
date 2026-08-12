@@ -37,12 +37,23 @@ function createDbHarness(params: {
 		(async () => params.insertRows ?? []) as () => Promise<unknown[]>
 	);
 	const insertValuesMock = mock((() => ({
+		onConflictDoNothing: () => ({ returning: insertReturningMock }),
 		returning: insertReturningMock,
-	})) as (...args: unknown[]) => { returning: () => Promise<unknown[]> });
+	})) as (...args: unknown[]) => {
+		onConflictDoNothing: (...args: unknown[]) => {
+			returning: () => Promise<unknown[]>;
+		};
+		returning: () => Promise<unknown[]>;
+	});
 	const insertMock = mock((() => ({ values: insertValuesMock })) as (
 		...args: unknown[]
 	) => {
-		values: (...args: unknown[]) => { returning: () => Promise<unknown[]> };
+		values: (...args: unknown[]) => {
+			onConflictDoNothing: (...args: unknown[]) => {
+				returning: () => Promise<unknown[]>;
+			};
+			returning: () => Promise<unknown[]>;
+		};
 	});
 
 	const updateReturningMock = mock(

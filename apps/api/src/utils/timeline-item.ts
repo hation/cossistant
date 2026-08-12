@@ -400,6 +400,10 @@ export async function createTimelineItem(
 		? item.createdAt.toISOString()
 		: new Date().toISOString();
 
+	// Use onConflictDoNothing so concurrent sends of the same idempotent
+	// message don't throw a primary-key violation (duplicate key 23505). If
+	// the row already exists (e.g. a duplicate parallel send), fall back to
+	// returning the existing row instead of failing.
 	const [createdItem] = await db
 		.insert(conversationTimelineItem)
 		.values({
@@ -416,15 +420,28 @@ export async function createTimelineItem(
 			createdAt,
 			deletedAt: null,
 		})
+		.onConflictDoNothing()
 		.returning();
 
-	if (!createdItem) {
+	let createdItemRow = createdItem;
+
+	if (!createdItemRow) {
+		// The insert was skipped because the id already exists. Return the
+		// existing row so callers (e.g. idempotent message sends) can continue.
+		[createdItemRow] = await db
+			.select()
+			.from(conversationTimelineItem)
+			.where(eq(conversationTimelineItem.id, timelineItemId))
+			.limit(1);
+	}
+
+	if (!createdItemRow) {
 		throw new Error("Failed to create timeline item: no record returned");
 	}
 
 	const parsedItem = timelineItemSchema.parse({
-		...createdItem,
-		parts: createdItem.parts,
+		...createdItemRow,
+		parts: createdItemRow.parts,
 	});
 
 	let visitorIdForEvent =
